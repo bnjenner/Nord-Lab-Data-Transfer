@@ -59,7 +59,7 @@ clone_and_check() {
   rclone mkdir $2 
 
   echo "###### Iniating Transfer_${4} ######"
-  rclone copy $1 $2 --verbose --include-from=$3 --max-size=15K \
+  rclone copy $1 $2 --verbose --include-from=$3 \
     --tpslimit=3 --transfers=3 --checkers=3 --buffer-size=48M \
     --retries-sleep=10s --retries=5 --ignore-size \
     --log-file=${LOG_DIR}/log_${ID}_${4}_transfer.out.txt
@@ -111,8 +111,9 @@ chunk_and_clone () {
 
       ls ${external_split_dir}/${chunky_file}_split/ > ${LOG_DIR}/temp_chunky_files_${ID}.txt
 
+
       clone_and_check ${external_split_dir}/${chunky_file}_split/ \
-                      ${destination_dir}${chunky_file}_split/ \
+                      ${destination_dir%/}/${chunky_file}_split/ \
                       ${LOG_DIR}/temp_chunky_files_${ID}.txt \
                       ${index}_split
 
