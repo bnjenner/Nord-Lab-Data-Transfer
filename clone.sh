@@ -56,14 +56,10 @@ shift $((OPTIND - 1))
 ## clone_and_check() : main transfer and check protocol.
 clone_and_check() {
 
-
-  touch ${LOG_DIR}/log_${ID}_${4}_big_transfer.out.txt
-  touch ${LOG_DIR}/log_${ID}_${4}_small_transfer.out.txt
-
   rclone mkdir $2 
 
   echo "###### Iniating Transfer_${4} ######"
-  rclone copy $1 $2 --verbose --include-from=$3 \
+  rclone copy $1 $2 --verbose --include-from=$3 --max-size=15K \
     --tpslimit=3 --transfers=3 --checkers=3 --buffer-size=48M \
     --retries-sleep=10s --retries=5 --ignore-size \
     --log-file=${LOG_DIR}/log_${ID}_${4}_transfer.out.txt
@@ -80,10 +76,11 @@ clone_and_check() {
 ## chunk_and_clone() : checks error messages for files that failed due to size. Splits these files into chunks for separate uploads
 chunk_and_clone () {
 
-  transfer_errors=$(awk 'BEGIN { FS = ": " } /ERROR/ {print $2}' ${1}) # extracts transfer errors 
-  size_limit=15000000000 # cut off file size (usually remote specific)
+  transfer_errors=`awk 'BEGIN { FS = ": " } /ERROR/ {print $2}' ${1} | grep -v "Attempt .* failed with .* errors and" | sort -u` # extracts transfer errors 
+  size_limit=15000000000 # cut off file size (usually remote specific) 15000000000
   size_chunks=$(( ${size_limit} / 2)) # chunk sizes for transfer
   
+
   external_split_dir=${EXTERNAL}/clone_split_directory # directory to store chunked files for transfer 
   location_dir=${2%/} # location of input (source)
   destination_dir=$3 # location for output (destination)
@@ -95,8 +92,9 @@ chunk_and_clone () {
 
   for file in ${transfer_errors[@]}
   do
-
-    chunky_file_size=`rclone size ${location_dir}/${file} | cut -d " " -f5 | cut -d "(" -f2`
+    echo ${location_dir}/${file}
+ 
+    chunky_file_size=`rclone size  ${location_dir}/${file} | cut -d " " -f5 | cut -d "(" -f2`
 
     if (( ${chunky_file_size} > ${size_limit} )) # this uses bytes for comparison
     then
@@ -108,16 +106,8 @@ chunk_and_clone () {
       
       echo "${location_dir}/${file}" > ${LOG_DIR}/temp_chunky_files_${ID}.txt
 
-      # move large file to external drive / directory with no file size limit
-      clone_and_check ${location_dir}/${file} \
-                      ${external_split_dir}/${chunky_file}_split \
-                      ${LOG_DIR}/temp_chunky_files_${ID}.txt \
-                      ${index}_unsplit
-
       # split file into chunks of specified sizes.
-      split -a 1 -b ${size_chunks} ${location_dir}/${file} ${external_split_dir}/${chunky_file}_split/${file}_split_
-      
-      rm ${external_split_dir}/${chunky_file}_split/${file}
+      split -a 1 -b ${size_chunks}  ${location_dir}/${file}  ${external_split_dir}/${chunky_file}_split/${file}_split_
 
       ls ${external_split_dir}/${chunky_file}_split/ > ${LOG_DIR}/temp_chunky_files_${ID}.txt
 
@@ -257,14 +247,14 @@ do
   if [ ! -z "$EXTERNAL" ]
   then
 
-    chunk_and_clone ${LOG_DIR}/log_${ID}_${i}_check.out.txt \
+    chunk_and_clone ${LOG_DIR}/log_${ID}_${i}_transfer.out.txt \
                     $FROM \
                     $TO \
                     $i
 
   fi
 
-  # compile statistics for easy parsing / formatting
+  #compile statistics for easy parsing / formatting
   grep -A 4 'ETA' ${LOG_DIR}/*${i}_transfer.out.txt | tail -5 >> ${LOG_DIR}/temp_${ID}.txt
 
   send_mail ${LOG_DIR}/temp_${ID}.txt \
@@ -274,7 +264,7 @@ do
             log_${ID}_${i}_transfer_final.txt  
 
 
-  echo "###### Transfer_${i} Complete ######"
+  # echo "###### Transfer_${i} Complete ######"
 
   rm ${LOG_DIR}/temp_${ID}.txt
 
