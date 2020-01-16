@@ -100,6 +100,7 @@ chunk_and_clone () {
     then
 
       echo "###### ERROR: File (${file}) too large. Splitting now. ######"
+      echo "###### Writing Chunked File to ${external_split_dir}/${chunky_file}_split. ######"
       chunky_file=${file%.*}
       
       [[ -d ${external_split_dir}/${chunky_file}_split ]] || mkdir ${external_split_dir}/${chunky_file}_split
@@ -193,11 +194,19 @@ EOF
 
 ID=`date +%s`
 
-# checks to see if -l was specified
+# checks to see if -l and -x was specified
 if [ -z "$LOG_DIR" ]
 then
 
   LOG_DIR="clone_log"
+
+fi
+
+if [ -z "$EXTERNAL" ]
+then
+
+  EXTERNAL="."
+
 
 fi
 
