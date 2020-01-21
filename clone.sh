@@ -92,15 +92,14 @@ chunk_and_clone () {
 
   for file in ${transfer_errors[@]}
   do
-    echo ${location_dir}/${file}
  
-    chunky_file_size=`rclone size  ${location_dir}/${file} | cut -d " " -f5 | cut -d "(" -f2`
+    chunky_file_size=`rclone size ${location_dir}/${file} | cut -d " " -f5 | cut -d "(" -f2`
 
     if (( ${chunky_file_size} > ${size_limit} )) # this uses bytes for comparison
     then
 
       echo "###### ERROR: File (${file}) too large. Splitting now. ######"
-      echo "###### Writing Chunked File to ${external_split_dir}/${chunky_file}_split. ######"
+      echo "###### Writing chunked file (${file}) to ${external_split_dir}/${chunky_file}_split/. This must be manually deleted. ######"
       chunky_file=${file%.*}
       
       [[ -d ${external_split_dir}/${chunky_file}_split ]] || mkdir ${external_split_dir}/${chunky_file}_split
@@ -111,7 +110,6 @@ chunk_and_clone () {
       split -a 1 -b ${size_chunks}  ${location_dir}/${file}  ${external_split_dir}/${chunky_file}_split/${file}_split_
 
       ls ${external_split_dir}/${chunky_file}_split/ > ${LOG_DIR}/temp_chunky_files_${ID}.txt
-
 
       clone_and_check ${external_split_dir}/${chunky_file}_split/ \
                       ${destination_dir%/}/${chunky_file}_split/ \
@@ -194,19 +192,11 @@ EOF
 
 ID=`date +%s`
 
-# checks to see if -l and -x was specified
+# checks to see if -l was specified
 if [ -z "$LOG_DIR" ]
 then
 
   LOG_DIR="clone_log"
-
-fi
-
-if [ -z "$EXTERNAL" ]
-then
-
-  EXTERNAL="."
-
 
 fi
 
@@ -267,14 +257,19 @@ do
   #compile statistics for easy parsing / formatting
   grep -A 4 'ETA' ${LOG_DIR}/*${i}_transfer.out.txt | tail -5 >> ${LOG_DIR}/temp_${ID}.txt
 
-  send_mail ${LOG_DIR}/temp_${ID}.txt \
-            ${LOG_DIR}/log_${ID}_${i}_transfer.out.txt \
-            ${LOG_DIR}/log_${ID}_${i}_check.out.txt \
-            "${FROM}  ->  ${TO}" \
-            log_${ID}_${i}_transfer_final.txt  
+
+  if [ ! -z "$EMAIL" ]
+  then
+
+    send_mail ${LOG_DIR}/temp_${ID}.txt \
+              ${LOG_DIR}/log_${ID}_${i}_transfer.out.txt \
+              ${LOG_DIR}/log_${ID}_${i}_check.out.txt \
+              "${FROM}  ->  ${TO}" \
+              log_${ID}_${i}_transfer_final.txt  
+  fi
 
 
-  # echo "###### Transfer_${i} Complete ######"
+  echo "###### Transfer_${i} Complete ######"
 
   rm ${LOG_DIR}/temp_${ID}.txt
 
