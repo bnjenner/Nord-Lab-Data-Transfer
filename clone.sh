@@ -135,6 +135,36 @@ chunk_and_clone () {
   
 }
 
+## check_and_unchunk () : identifies files previously split by clone.sh and merges them
+ check_and_unchunk () {
+
+  dest_var=$1
+
+  dest_list=`rclone ls --exclude=logfolder/ --exclude=lost+found/ $dest_var | \
+             awk '{$1=""; print $0}' | grep split_`
+
+  temp_list=()
+
+  for file in ${dest_list[@]}
+  do
+    temp_list+=( `echo $file |  rev | cut -d '/' -f 2- | rev` ) 
+  done
+
+  split_dir_list=`echo ${temp_list[@]} | tr " " "\n" | sort -n | uniq | tr "\n" " "`
+
+
+  for dir in ${split_dir_list[@]}
+  do
+    if [[ $dir = *_split ]] 
+    then
+      echo "###### Split File ( ${dest_var%/}/${dir} ) Identified. Merging now. ######"
+      unchunk.sh -d ${dest_var%/}/${dir}
+      echo "###### Merge Complete. ######"
+    fi
+  done
+
+}
+
 ## mail() : parses log and output files to construct email file. Sends email to specified address
 send_mail () {
 
@@ -275,6 +305,13 @@ do
               log_${ID}_${i}_transfer_final.txt  
   fi
 
+  # checks if destination isn't a remote before attempting to unchunk
+  if [[ $TO != *:* ]]
+  then 
+
+    check_and_unchunk $TO 
+    
+  fi
 
   echo "###### Transfer_${i} Complete ######"
 

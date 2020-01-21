@@ -26,7 +26,7 @@ while getopts ':hd:' option; do
     h) echo "$usage"
        exit
        ;;
-    d) SPLIT_DIR=${OPTARG}
+    d) SPLIT_DIR=${OPTARG%/}
        ;;
   esac
 done
@@ -38,13 +38,15 @@ shift $((OPTIND - 1))
 
 files=( $(ls ${SPLIT_DIR}) )
 out_file=${files[0]%_split*}
-out_path=`echo ${SPLIT_DIR} | rev | cut -d "/" -f3- | rev` 
+out_path=`echo ${SPLIT_DIR} | rev | cut -d "/" -f2- | rev` 
 
+touch ${out_path}/${out_file}
 
 for file in ${files[@]}
 do
     cat ${SPLIT_DIR}/${file} >> ${out_path}/${out_file}
 done
 
-rm -rf ${SPLIT_DIR})
+
+rm -rf ${SPLIT_DIR}
 
