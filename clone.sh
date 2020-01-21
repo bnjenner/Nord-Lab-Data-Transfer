@@ -27,7 +27,7 @@ EOF
 ###############################################################
 #### Argument Parser
 
-while getopts ':hs:d:r:e:x:l:v' option; do
+while getopts ':hs:d:r:e:x:l:vi:' option; do
   case $option in
     h) echo "$usage"
        exit
@@ -45,6 +45,8 @@ while getopts ':hs:d:r:e:x:l:v' option; do
     l) LOG_DIR=${OPTARG%/}
        ;;
     v) VERBOSE=VERBOSE
+       ;;
+    i) ID=${OPTARG}
        ;;
   esac
 done
@@ -189,7 +191,13 @@ EOF
 ###############################################################
 #### File Transfer Script
 
-ID=`date +%s`
+# checks to see if -i was specified
+if [ -z "$ID" ]
+then
+
+  ID=`date +%s`
+
+fi
 
 # checks to see if -l was specified
 if [ -z "$LOG_DIR" ]
