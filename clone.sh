@@ -5,7 +5,7 @@
 
 usage=$(cat << EOF
 usage:
-    $(basename "$0") [-h] [-s source] [-s destination] [-e email]
+    $(basename "$0") [-h] [-s source] [-d destination]
 
 description:
     rclone file copy protocol with completion and error update emails.
@@ -78,8 +78,7 @@ chunk_and_clone () {
 
   transfer_errors=`awk 'BEGIN { FS = ": " } /ERROR/ {print $2}' ${1} | grep -v "Attempt .* failed with .* errors and" | sort -u` # extracts transfer errors 
   size_limit=15000000000 # cut off file size (usually remote specific) 15000000000
-  size_chunks=$(( ${size_limit} / 2)) # chunk sizes for transfer
-  
+  size_chunks=$(( ${size_limit} / 2)) # chunk sizes for transfer  
 
   external_split_dir=${EXTERNAL}/clone_split_directory # directory to store chunked files for transfer 
   location_dir=${2%/} # location of input (source)
@@ -137,7 +136,7 @@ chunk_and_clone () {
 ## mail() : parses log and output files to construct email file. Sends email to specified address
 send_mail () {
 
-  echo "###### Sending Email Update: Transfer ( ) ######"
+  echo "###### Sending Email Update: Transfer ${4} ######"
 
   transfer_stats=$(cat "${1}") # extracts last instance of speed and transfer updates
   err_messages=$(grep 'NOTICE\|ERROR' $2) # extracts all error and notice messages
