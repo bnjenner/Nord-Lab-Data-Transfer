@@ -12,6 +12,7 @@ For questions of comments, PLEASE contact
 Bradley Jenner at <bnjenner@ucdavis.edu>
 
 #################### clone.sh  ####################
+
 usage:
     clone.sh [-h] [-s source] [-s destination] [-e email]
 
@@ -29,6 +30,7 @@ arguments:
     -v verbose          save intermediate log files for debugging
 
 #################### unchunk.sh  ####################
+
 usage:
     $(basename "$0") [-h] [-d directory] 
 
@@ -54,7 +56,7 @@ arguments:
     -d drive        copy location for source
     -e email        email address to send completion or error message
     -x external         external drive for storing and splitting large files temporarily
-    -l log              directory for log files
+    -l log              directory for log files 
 
 
 
