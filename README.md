@@ -16,6 +16,7 @@ Bradley Jenner at <bnjenner@ucdavis.edu>
 Clone this repository to your computer and add it 
 to your path in .bash_profile
 
+    git clone https://github.com/libgit2/libgit2
     export PATH=$PATH:path/to/this/repository
 
 
