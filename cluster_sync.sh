@@ -74,11 +74,11 @@ do
 			if [[ $dest_subdir == $source_dir ]]
 			then
 				clone.sh -s ${SOURCE_DIR}/$source_dir \
-					       -d ${DEST_DIR}/$dest_dir/$dest_subdir \
-				 	       -l $LOG_DIR \
-				 	       -x $EXTERNAL \
-			     	     -e $EMAIL \
-			     	 	   -v -i ${ID}_${dest_dir}_$dest_subdir
+					 -d ${DEST_DIR}/$dest_dir/$dest_subdir \
+				 	 -l $LOG_DIR \
+				 	 -x $EXTERNAL \
+			     	         -e $EMAIL \
+			     	 	 -v -i ${ID}_${dest_dir}_$dest_subdir
 			fi
 		done
 	done
