@@ -4,7 +4,7 @@ The following scripts are implementations of
 the Rclone data transfer protocol that accomplish
 a specific set of tasks defined by the needs of 
 the Nord Lab at UC Davis and their system 
-infratstructure. Please understand that the 
+infrastructure. Please familarize yourself with the 
 following programs as well as the functionality
 of Rclone before using these scripts. 
 
