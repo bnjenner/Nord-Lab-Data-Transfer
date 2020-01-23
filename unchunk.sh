@@ -8,15 +8,22 @@ usage:
     $(basename "$0") [-h] [-d directory] 
 
 description:
-    concatenate split files 
+    concatenate files previously split  by clone.sh
 
 arguments:
-    -h help		prints help documentation
+    -h help   prints help documentation
     -d directory        split directory to reassemble
 
 For questions of comments, contact Bradley Jenner at <bnjenner@ucdavis.edu>
 EOF
 )
+
+###############################################################
+#### Exit and Error and Debug Messages
+
+set -e
+trap 'last_command=$current_command; current_command=$BASH_COMMAND' DEBUG
+trap 'echo "\"${last_command}\" command failed on line ${LINENO}."' EXIT
 
 ###############################################################
 #### Argument Parser

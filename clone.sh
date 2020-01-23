@@ -12,11 +12,11 @@ description:
 
 arguments:
     -h help		prints help documentation
-    -s source		source location for files to copy
-    -d drive		copy location from source
-    -r remote		copy location from drive (optional second transfer)
+    -s source		source location for files to copy 
+    -d destination		copy location for source files 
+    -f final		copy location from destination. Optional second transfer 
     -e email		email address to send completion or error emails
-    -x external         external drive for storing and splitting large files temporarily
+    -x external         external drive for storing and splitting large intermediate files temporarily
     -l log              directory for log files
     -v verbose          save intermediate log files for debugging
 
@@ -25,18 +25,25 @@ EOF
 )
 
 ###############################################################
+#### Exit and Error and Debug Messages
+
+set -e
+trap 'last_command=$current_command; current_command=$BASH_COMMAND' DEBUG
+trap 'echo "\"${last_command}\" command failed on line ${LINENO}."' EXIT
+
+###############################################################
 #### Argument Parser
 
-while getopts ':hs:d:r:e:x:l:vi:' option; do
+while getopts ':hs:d:f:e:x:l:vi:' option; do
   case $option in
     h) echo "$usage"
        exit
        ;;
     s) SOURCE_DIR=${OPTARG}
        ;;
-    d) DRIVE_DIR=${OPTARG}
+    d) DEST_DIR=${OPTARG}
        ;;
-    r) REMOTE_DIR=${OPTARG-NA}
+    f) FINAL_DIR=${OPTARG-NA}
        ;;
     e) EMAIL=${OPTARG}
        ;;
@@ -127,6 +134,8 @@ chunk_and_clone () {
         sed -i '' "/${file}/d" $CHECK
         cat ${LOG_DIR}/temp_chunky_files_${ID}.txt >> $CHECK
 
+        rm -rf ${external_split_dir}/
+
       fi
 
     fi 
@@ -158,7 +167,7 @@ chunk_and_clone () {
     if [[ $dir = *_split ]] 
     then
       echo "###### Split File ( ${dest_var%/}/${dir} ) Identified. Merging now. ######"
-      unchunk.sh -d ${dest_var%/}/${dir}
+      ./unchunk.sh -d ${dest_var%/}/${dir}
       echo "###### Merge Complete. ######"
     fi
   done
@@ -245,7 +254,7 @@ fi
 rclone ls --exclude=logfolder/ --exclude=lost+found/ $SOURCE_DIR | \
   awk '{$1=""; print $0}' > ${LOG_DIR}/source_files_${ID}.txt
 
-if [ ! -z "$REMOTE_DIR" ]
+if [ ! -z "$FINAL_DIR" ]
 then
 
   trans_number=3
@@ -264,13 +273,13 @@ do
   then 
 
     FROM=$SOURCE_DIR
-    TO=$DRIVE_DIR
+    TO=$DEST_DIR
     CHECK=${LOG_DIR}/source_files_${ID}.txt
 
   else
 
     FROM=$DRIVE_DIR
-    TO=$REMOTE_DIR
+    TO=$FINAL_DIR
     CHECK=${LOG_DIR}/source_files_${ID}.txt
 
   fi
