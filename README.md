@@ -11,6 +11,14 @@ of Rclone before using these scripts.
 For questions of comments, PLEASE contact
 Bradley Jenner at <bnjenner@ucdavis.edu>
 
+################### General Notice ################
+
+Clone this repository to your computer and add it 
+to your path in .bash_profile
+
+    export PATH=$PATH:path/to/this/repository
+
+
 #################### clone.sh  ####################
 
 usage:
