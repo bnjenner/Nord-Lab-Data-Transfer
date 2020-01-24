@@ -24,7 +24,7 @@ EOF
 
 set -e
 trap 'last_command=$current_command; current_command=$BASH_COMMAND' DEBUG
-trap 'echo "\"${last_command}\" command failed on line ${LINENO}."' EXIT
+trap 'echo "\"${last_command}\" command failed on line ${LINENO}."' ERR
 
 ###############################################################
 #### Argument Parser

@@ -15,7 +15,8 @@ arguments:
     -s source		source location for files to copy 
     -d destination		copy location for source files 
     -f final		copy location from destination. Optional second transfer 
-    -e email		email address to send completion email. (Sender Email and password must be configured on line 225)
+    -e email		email address to send completion email.
+    -k key    key file specifying email and password ("email:password")     
     -x external         external drive for storing and splitting large intermediate files temporarily
     -l log              directory for log files
     -v verbose          save intermediate log files for debugging
@@ -29,12 +30,12 @@ EOF
 
 set -e
 trap 'last_command=$current_command; current_command=$BASH_COMMAND' DEBUG
-trap 'echo "\"${last_command}\" command failed on line ${LINENO}."' EXIT
+trap 'echo "\"${last_command}\" command failed on line ${LINENO}."' ERR
 
 ###############################################################
 #### Argument Parser
 
-while getopts ':hs:d:f:e:x:l:vi:' option; do
+while getopts ':hs:d:f:e:k:x:l:vi:' option; do
   case $option in
     h) echo "$usage"
        exit
@@ -46,6 +47,8 @@ while getopts ':hs:d:f:e:x:l:vi:' option; do
     f) FINAL_DIR=${OPTARG-NA}
        ;;
     e) EMAIL=${OPTARG}
+       ;;
+    k) KEY=${OPTARG}
        ;;
     x) EXTERNAL=${OPTARG%/}
        ;;
@@ -161,7 +164,6 @@ chunk_and_clone () {
 
   split_dir_list=`echo ${temp_list[@]} | tr " " "\n" | sort -n | uniq | tr "\n" " "`
 
-
   for dir in ${split_dir_list[@]}
   do
     if [[ $dir = *_split ]] 
@@ -222,12 +224,15 @@ EOF
 )
   echo -e "${formatted_message}" > ${LOG_DIR}/${output_name} # creates human readable stats file 
 
-  curl --url 'smtp://smtp.gmail.com:587' 
+  key=`cat $KEY`
+  sender=`echo $key | cut -d ':' -f 1`  
+
+  curl --url 'smtp://smtp.gmail.com:587' \
     --ssl-reqd \
-    --mail-from '' # Enter sender email ("email")
+    --mail-from $sender \
     --mail-rcpt $EMAIL \
-    --upload-file ${LOG_DIR}/${output_name}
-    --user '' # Enter email and password ("email:password")
+    --upload-file ${LOG_DIR}/${output_name} \
+    --user $key # Enter email and password ("email:password")
 }
 
 ###############################################################
@@ -306,8 +311,15 @@ do
   #compile statistics for easy parsing / formatting
   grep -A 4 'ETA' ${LOG_DIR}/*${i}_transfer.out.txt | tail -5 >> ${LOG_DIR}/temp_${ID}.txt
 
+  # checks if destination isn't a remote before attempting to unchunks
+  if [[ $TO != *:* ]]
+  then 
 
-  if [ ! -z "$EMAIL" ]
+    check_and_unchunk $TO 
+
+  fi
+
+  if [ ! -z "$EMAIL" ] && [ ! -z "$KEY" ]
   then
 
     send_mail ${LOG_DIR}/temp_${ID}.txt \
@@ -317,13 +329,6 @@ do
               log_${ID}_${i}_transfer_final.txt  
   fi
 
-  # checks if destination isn't a remote before attempting to unchunk
-  if [[ $TO != *:* ]]
-  then 
-
-    check_and_unchunk $TO 
-    
-  fi
 
   echo "###### Transfer_${i} Complete ######"
 

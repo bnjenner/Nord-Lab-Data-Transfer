@@ -23,7 +23,7 @@ EOF
 
 set -e
 trap 'last_command=$current_command; current_command=$BASH_COMMAND' DEBUG
-trap 'echo "\"${last_command}\" command failed on line ${LINENO}."' EXIT
+trap 'echo "\"${last_command}\" command failed on line ${LINENO}."' ERR
 
 ###############################################################
 #### Argument Parser
@@ -44,14 +44,14 @@ shift $((OPTIND - 1))
 
 
 files=( $(ls ${SPLIT_DIR}) )
-out_file=${files[0]%_split*}
+out_file=${SPLIT_DIR%_split*}
 out_path=`echo ${SPLIT_DIR} | rev | cut -d "/" -f2- | rev` 
 
-touch ${out_path}/${out_file}
+touch ${out_file}
 
 for file in ${files[@]}
 do
-    cat ${SPLIT_DIR}/${file} >> ${out_path}/${out_file}
+    cat ${SPLIT_DIR}/${file} >> ${out_file}
 done
 
 
