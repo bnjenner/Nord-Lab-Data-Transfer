@@ -15,7 +15,7 @@ arguments:
     -s source		source location for files to copy 
     -d destination		copy location for source files 
     -f final		copy location from destination. Optional second transfer 
-    -e email		email address to send completion or error emails
+    -e email		email address to send completion email. (Sender Email and password must be configured on line 225)
     -x external         external drive for storing and splitting large intermediate files temporarily
     -l log              directory for log files
     -v verbose          save intermediate log files for debugging
@@ -222,9 +222,12 @@ EOF
 )
   echo -e "${formatted_message}" > ${LOG_DIR}/${output_name} # creates human readable stats file 
 
-  curl --url 'smtp://smtp.gmail.com:587' --ssl-reqd \
-    --mail-from 'noreplyboxupload@gmail.com' --mail-rcpt $EMAIL \
-    --upload-file ${LOG_DIR}/${output_name} --user 
+  curl --url 'smtp://smtp.gmail.com:587' 
+    --ssl-reqd \
+    --mail-from '' # Enter sender email ("email")
+    --mail-rcpt $EMAIL \
+    --upload-file ${LOG_DIR}/${output_name}
+    --user '' # Enter email and password ("email:password")
 }
 
 ###############################################################
