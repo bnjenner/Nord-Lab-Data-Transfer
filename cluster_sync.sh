@@ -12,6 +12,7 @@ arguments:
     -s source		source location for files to copy
     -d drive		location for source
     -e email		email address to send completion or error message
+    -k key    key file specifying email and password ("email:password")
     -x external         external drive for storing and splitting large files temporarily
     -l log              directory for log files
 
@@ -29,7 +30,7 @@ trap 'echo "\"${last_command}\" command failed on line ${LINENO}."' ERR
 ###############################################################
 #### Argument Parser
 
-while getopts ':hs:d:e:x:l:' option; do
+while getopts ':hs:d:e:k:x:l:' option; do
   case $option in
     h) echo "$usage"
        exit
@@ -39,6 +40,8 @@ while getopts ':hs:d:e:x:l:' option; do
     d) DEST_DIR=${OPTARG%/}
        ;;
     e) EMAIL=${OPTARG}
+       ;;
+    k) KEY=${OPTARG}
        ;;
     x) EXTERNAL=${OPTARG%/}
        ;;
@@ -77,7 +80,7 @@ do
 					 -d ${DEST_DIR}/$dest_dir/$dest_subdir \
 				 	 -l $LOG_DIR \
 				 	 -x $EXTERNAL \
-			     	         -e $EMAIL \
+			     	         -e $EMAIL -k $KEY \
 			     	 	 -v -i ${ID}_${dest_dir}_$dest_subdir
 			fi
 		done
