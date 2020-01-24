@@ -42,6 +42,8 @@ arguments:
     
     -e email		email address to send completion or error emails
     
+    -k key          key file specifying email and password ("email:password")     
+    
     -x external         external drive for storing and splitting large files temporarily
     
     -l log              directory for log files
