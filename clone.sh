@@ -224,7 +224,7 @@ EOF
 
   curl --url 'smtp://smtp.gmail.com:587' --ssl-reqd \
     --mail-from 'noreplyboxupload@gmail.com' --mail-rcpt $EMAIL \
-    --upload-file ${LOG_DIR}/${output_name} --user 'noreplyboxupload@gmail.com:sokku8-keghuh-Qatcah'
+    --upload-file ${LOG_DIR}/${output_name} --user 
 }
 
 ###############################################################
