@@ -24,11 +24,11 @@ to your path in .bash_profile
 
 usage:
     
-    clone.sh [-h] [-s source] [-s destination] [-e email]
+   clone.sh [-h] [-s source] [-s destination] [-e email]
 
 description:
     
-    file copy protocol (rclone) with completion and error update emails.
+   file copy protocol (rclone) with completion and error update emails.
 
 arguments:
     
@@ -54,11 +54,11 @@ arguments:
 
 usage:
 
-    unchunk.sh [-h] [-d directory] 
+   unchunk.sh [-h] [-d directory] 
 
 description:
 
-    concatenate files previously split by clone.sh   
+   concatenate files previously split by clone.sh   
 
 arguments:
 
@@ -71,11 +71,11 @@ arguments:
 
 usage:
 
-    cluster_sync.sh [-h] [-s source] [-d destination]
+   cluster_sync.sh [-h] [-s source] [-d destination]
 
 description:
 
-    Implementation of clone.sh that copies contents of subdirectories into corresponding, pre-existing directories.  
+   Implementation of clone.sh that copies contents of subdirectories into corresponding, pre-existing directories.  
 
 arguments:
 
