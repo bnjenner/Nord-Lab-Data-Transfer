@@ -22,15 +22,15 @@ to your path in .bash_profile
 
 #################### clone.sh  ####################
 
-usage:
+USAGE:
     
    clone.sh [-h] [-s source] [-s destination] [-e email]
 
-description:
+DESCRIPTION:
     
    file copy protocol (rclone) with completion and error update emails.
 
-arguments:
+ARGUMENTS:
     
     -h help		prints help documentation
     
@@ -52,15 +52,15 @@ arguments:
 
 #################### unchunk.sh  ####################
 
-usage:
+USAGE:
 
    unchunk.sh [-h] [-d directory] 
 
-description:
+DESCRIPTION:
 
    concatenate files previously split by clone.sh   
 
-arguments:
+ARGUMENTS:
 
     -h help     prints help documentation
     
@@ -69,15 +69,15 @@ arguments:
 
 #################### cluster_sync.sh  ####################
 
-usage:
+USAGE:
 
    cluster_sync.sh [-h] [-s source] [-d destination]
 
-description:
+DESCRIPTION:
 
    Implementation of clone.sh that copies contents of subdirectories into corresponding, pre-existing directories.  
 
-arguments:
+ARGUMENTS:
 
     -h help     prints help documentation
     
