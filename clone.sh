@@ -259,40 +259,42 @@ fi
 
 
 TRANSFER_GATE="init" # trasnfer gatekeeper variable
-INIT_RETRIES=0 # retries variable
 
 #### First Transfer : $SOURCE --> $DRIVE
-while [ "$TRANSFER_GATE" != " " ]
+while [ "$TRANSFER_GATE" != "pass" ]
 do
 
   rclone ls --exclude=logfolder/ --exclude=lost+found/ $SOURCE_DIR --log-file=${LOG_DIR}/connection_log_${ID}.txt | \
     awk '{$1=""; print $0}' > ${LOG_DIR}/source_files_${ID}.txt
 
-  if [ "$INIT_RETRIES" == 2 ]
-  then
-    echo "###### Max Retries Reached: Ending Transfer. ######"
-    exit
-  fi
-
   connection_gate=`cat ${LOG_DIR}/connection_log_${ID}.txt`
 
-  if [ ! -z "$connection_gate" ]
+  if [[ "$connection_gate" == *"ERROR"* ]] || [[ "$connection_gate" == *"couldn’t connect SSH"* ]]
   then
 
     if [[ "$connection_gate" == *"couldn’t connect SSH"* ]] # checks for connection error an waits to retry 
     then
+
       echo "###### SSH Connection Failed: Retrying in 30 minutes. ######"
-      INIT_RETRIES=$(($INIT_RETRIES+1))
       sleep 1800
+
     fi
 
     if [[ "$connection_gate" == *"error listing"* ]] # if listint error, program fails
     then
+
       echo $connection_gate
       echo "###### Ending Transfer. ######"
       exit
+
     fi
+
+  else
+
+    TRANSFER_GATE="pass"
+
   fi
+
 done
 
 if [ ! -z "$FINAL_DIR" ]
