@@ -32,6 +32,8 @@ set -e
 trap 'last_command=$current_command; current_command=$BASH_COMMAND' DEBUG
 trap 'echo "\"${last_command}\" command failed on line ${LINENO}."' ERR
 
+
+
 ###############################################################
 #### Argument Parser
 
@@ -89,6 +91,13 @@ clone_and_check() {
 chunk_and_clone () {
 
   transfer_errors=`awk 'BEGIN { FS = ": " } /ERROR/ {print $2}' ${1} | grep -v "Attempt .* failed with .* errors and" | sort -u` # extracts transfer errors 
+
+  if [ -z  $transfer_errors ]
+  then
+    return 1
+  fi
+
+
   size_limit=15000000000 # cut off file size (usually remote specific) 15000000000
   size_chunks=$(( ${size_limit} / 2)) # chunk sizes for transfer  
 
@@ -127,7 +136,7 @@ chunk_and_clone () {
                       ${LOG_DIR}/temp_chunky_files_${ID}.txt \
                       ${index}_split
 
-      chunk_check=`grep -e '0 differences found' ${LOG_DIR}/log_${ID}_${index}_split_check.out.txt`
+      chunk_check=`grep -e '0 differences found' ${LOG_DIR}/log_${ID}_${index}_split_check.out.txt` 
 
       if [[ $chunk_check != "" ]] 
       then
@@ -362,6 +371,7 @@ do
               ${LOG_DIR}/log_${ID}_${i}_check.out.txt \
               "${FROM}  ->  ${TO}" \
               log_${ID}_${i}_transfer_final.txt  
+
   fi
 
 
