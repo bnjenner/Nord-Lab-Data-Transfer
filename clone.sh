@@ -70,16 +70,14 @@ shift $((OPTIND - 1))
 ## clone_and_check() : main transfer and check protocol.
 clone_and_check() {
 
-  rclone mkdir $2 
-
-  echo "###### Iniating Transfer_${4} ######"
+  echo "###### Iniating Transfer: ${4} ######"
   rclone copy $1 $2 --verbose --include-from=$3 \
     --tpslimit=3 --transfers=3 --checkers=3 --buffer-size=48M \
     --retries-sleep=10s --retries=5 --ignore-size \
     --log-file=${LOG_DIR}/log_${ID}_${4}_transfer.out.txt
 
 
-  echo "###### Checking Transfer_${4} ######"
+  echo "###### Checking Transfer: ${4} ######"
   rclone check $1 $2 --files-from=$3 --one-way \
     --tpslimit=3 --transfers=3 --checkers=3 --buffer-size=48M \
     --retries-sleep=10s --retries=5 --ignore-size \
@@ -92,7 +90,7 @@ chunk_and_clone () {
 
   transfer_errors=`awk 'BEGIN { FS = ": " } /ERROR/ {print $2}' ${1} | grep -v "Attempt .* failed with .* errors and" | sort -u` # extracts transfer errors 
 
-  if [ -z  $transfer_errors ]
+  if [ -z $transfer_errors ]
   then
     return 1
   fi
@@ -236,12 +234,7 @@ EOF
   key=`cat $KEY`
   sender=`echo $key | cut -d ':' -f 1`  
 
-  curl --url 'smtp://smtp.gmail.com:587' \
-    --ssl-reqd \
-    --mail-from $sender \
-    --mail-rcpt $EMAIL \
-    --upload-file ${LOG_DIR}/${output_name} \
-    --user $key # Enter email and password ("email:password")
+  c
 }
 
 ###############################################################

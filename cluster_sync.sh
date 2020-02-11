@@ -13,7 +13,6 @@ arguments:
     -d drive		location for source
     -e email		email address to send completion or error message
     -k key    key file specifying email and password ("email:password")
-    -x external         external drive for storing and splitting large files temporarily
     -l log              directory for log files
 
 For questions of comments, contact Bradley Jenner at <bnjenner@ucdavis.edu>
@@ -30,7 +29,7 @@ trap 'echo "\"${last_command}\" command failed on line ${LINENO}."' ERR
 ###############################################################
 #### Argument Parser
 
-while getopts ':hs:d:e:k:x:l:' option; do
+while getopts ':hs:d:e:k:l:' option; do
   case $option in
     h) echo "$usage"
        exit
@@ -42,8 +41,6 @@ while getopts ':hs:d:e:k:x:l:' option; do
     e) EMAIL=${OPTARG}
        ;;
     k) KEY=${OPTARG}
-       ;;
-    x) EXTERNAL=${OPTARG%/}
        ;;
     l) LOG_DIR=${OPTARG%/}
        ;;
@@ -61,10 +58,10 @@ echo "##### Transfer ID: ${ID} #####"
 
 mkdir ${LOG_DIR}/phase_2_${ID}
 
-rclone lsd --exclude=logfolder/ --exclude=lost+found/ $SOURCE_DIR | \
+rclone lsd $SOURCE_DIR | \
   awk '{print $5}' > ${LOG_DIR}/phase_2_${ID}/phase_2_source_dirs_${ID}.txt
 
-rclone lsd -L --exclude=logfolder/ --exclude=box.com/ $DEST_DIR | \
+rclone lsd --exclude=logfolder/ --exclude=box.com/ $DEST_DIR | \
   awk '{print $5}' > ${LOG_DIR}/phase_2_${ID}/phase_2_dest_dirs_${ID}.txt
 
 
@@ -76,12 +73,11 @@ do
 		do
 			if [[ $dest_subdir == $source_dir ]]
 			then
-				clone.sh -s ${SOURCE_DIR}/$source_dir \
-					 -d ${DEST_DIR}/$dest_dir/$dest_subdir \
-				 	 -l $LOG_DIR \
-				 	 -x $EXTERNAL \
-			     	         -e $EMAIL -k $KEY \
-			     	 	 -v -i ${ID}_${dest_dir}_$dest_subdir
+				./clone.sh -s ${SOURCE_DIR}/$source_dir \
+					         -d ${DEST_DIR}/$dest_dir/$dest_subdir \
+				 	         -l $LOG_DIR \
+			     	       -e $EMAIL -k $KEY \
+			     	 	     -v -i ${ID}_${dest_dir}_$dest_subdir
 			fi
 		done
 	done
