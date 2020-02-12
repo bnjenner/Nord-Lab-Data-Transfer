@@ -234,7 +234,10 @@ EOF
   key=`cat $KEY`
   sender=`echo $key | cut -d ':' -f 1`  
 
-  c
+  curl --url 'smtp://smtp.gmail.com:587' --ssl-reqd \
+  --mail-from $sender --mail-rcpt $EMAIL \
+  --upload-file ${LOG_DIR}/${output_name} --user $key
+  
 }
 
 ###############################################################
