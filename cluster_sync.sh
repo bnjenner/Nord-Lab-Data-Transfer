@@ -58,10 +58,10 @@ echo "##### Transfer ID: ${ID} #####"
 
 mkdir ${LOG_DIR}/phase_2_${ID}
 
-rclone lsd $SOURCE_DIR | \
+rclone lsd --include-from=server_directories.txt $SOURCE_DIR | \
   awk '{print $5}' > ${LOG_DIR}/phase_2_${ID}/phase_2_source_dirs_${ID}.txt
 
-rclone lsd --exclude=logfolder/ --exclude=box.com/ $DEST_DIR | \
+rclone lsd -L --exclude=logfolder/ --exclude=box.com/ $DEST_DIR | \
   awk '{print $5}' > ${LOG_DIR}/phase_2_${ID}/phase_2_dest_dirs_${ID}.txt
 
 
@@ -73,8 +73,8 @@ do
 		do
 			if [[ $dest_subdir == $source_dir ]]
 			then
-				./clone.sh -s ${SOURCE_DIR}/$source_dir \
-					         -d ${DEST_DIR}/$dest_dir/$dest_subdir \
+				./clone.sh -s ${SOURCE_DIR}/${source_dir} \
+					         -d ${DEST_DIR}/${dest_dir}/${dest_subdir} \
 				 	         -l $LOG_DIR \
 			     	       -e $EMAIL -k $KEY \
 			     	 	     -v -i ${ID}_${dest_dir}_$dest_subdir

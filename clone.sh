@@ -12,11 +12,11 @@ description:
 
 arguments:
     -h help		prints help documentation
-    -s source		source location for files to copy 
-    -d destination		copy location for source files 
-    -f final		copy location from destination. Optional second transfer 
+    -s source		source location for files to copy
+    -d destination		copy location for source files
+    -f final		copy location from destination. Optional second transfer
     -e email		email address to send completion email.
-    -k key    key file specifying email and password ("email:password")     
+    -k key    key file specifying email and password ("email:password")
     -x external         external drive for storing and splitting large intermediate files temporarily
     -l log              directory for log files
     -v verbose          save intermediate log files for debugging
@@ -78,7 +78,7 @@ clone_and_check() {
 
 
   echo "###### Checking Transfer: ${4} ######"
-  rclone check $1 $2 --files-from=$3 --one-way \
+  rclone check $1 $2 --verbose --files-from=$3 --one-way \
     --tpslimit=3 --transfers=3 --checkers=3 --buffer-size=48M \
     --retries-sleep=10s --retries=5 --ignore-size \
     --log-file=${LOG_DIR}/log_${ID}_${4}_check.out.txt
@@ -92,14 +92,14 @@ chunk_and_clone () {
 
   if [ -z $transfer_errors ]
   then
-    return 1
+    return 0
   fi
 
 
   size_limit=15000000000 # cut off file size (usually remote specific) 15000000000
-  size_chunks=$(( ${size_limit} / 2)) # chunk sizes for transfer  
+  size_chunks=$(( ${size_limit} / 2)) # chunk sizes for transfer
 
-  external_split_dir=${EXTERNAL}/clone_split_directory # directory to store chunked files for transfer 
+  external_split_dir=${EXTERNAL}/clone_split_directory # directory to store chunked files for transfer
   location_dir=${2%/} # location of input (source)
   destination_dir=$3 # location for output (destination)
   index="${4}_chunk" # index prefix
@@ -110,7 +110,7 @@ chunk_and_clone () {
 
   for file in ${transfer_errors[@]}
   do
- 
+
     chunky_file_size=`rclone size ${location_dir}/${file} | cut -d " " -f5 | cut -d "(" -f2`
 
     if (( ${chunky_file_size} > ${size_limit} )) # this uses bytes for comparison
@@ -119,9 +119,9 @@ chunk_and_clone () {
       echo "###### ERROR: File (${file}) too large. Splitting now. ######"
       echo "###### Writing chunked file (${file}) to ${external_split_dir}/${chunky_file}_split/. This must be manually deleted. ######"
       chunky_file=${file%.*}
-      
+
       [[ -d ${external_split_dir}/${chunky_file}_split ]] || mkdir ${external_split_dir}/${chunky_file}_split
-      
+
       echo "${location_dir}/${file}" > ${LOG_DIR}/temp_chunky_files_${ID}.txt
 
       # split file into chunks of specified sizes.
@@ -134,9 +134,9 @@ chunk_and_clone () {
                       ${LOG_DIR}/temp_chunky_files_${ID}.txt \
                       ${index}_split
 
-      chunk_check=`grep -e '0 differences found' ${LOG_DIR}/log_${ID}_${index}_split_check.out.txt` 
+      chunk_check=`grep -e '0 differences found' ${LOG_DIR}/log_${ID}_${index}_split_check.out.txt`
 
-      if [[ $chunk_check != "" ]] 
+      if [[ $chunk_check != "" ]]
       then
 
         sed -i '' "/${file}/d" ${LOG_DIR}/log_${ID}_${i}_transfer.out.txt
@@ -148,16 +148,23 @@ chunk_and_clone () {
 
       fi
 
-    fi 
+    fi
 
   done
-  
+
 }
 
 ## check_and_unchunk () : identifies files previously split by clone.sh and merges them
  check_and_unchunk () {
 
   dest_var=$1
+
+  dest_check=`rclone ls --exclude=logfolder/ --exclude=lost+found/ $dest_var`
+
+  if [ -z $dest_check ]
+  then
+  	return 0
+  fi
 
   dest_list=`rclone ls --exclude=logfolder/ --exclude=lost+found/ $dest_var | \
              awk '{$1=""; print $0}' | grep split_`
@@ -166,48 +173,58 @@ chunk_and_clone () {
 
   for file in ${dest_list[@]}
   do
-    temp_list+=( `echo $file |  rev | cut -d '/' -f 2- | rev` ) 
+    temp_list+=( `echo $file |  rev | cut -d '/' -f 2- | rev` )
   done
 
   split_dir_list=`echo ${temp_list[@]} | tr " " "\n" | sort -n | uniq | tr "\n" " "`
 
   for dir in ${split_dir_list[@]}
   do
-    if [[ $dir = *_split ]] 
+    if [[ $dir = *_split ]]
     then
+
       echo "###### Split File ( ${dest_var%/}/${dir} ) Identified. Merging now. ######"
-      unchunk.sh -d ${dest_var%/}/${dir}
+      ./unchunk.sh -d ${dest_var%/}/${dir}
+
       echo "###### Merge Complete. ######"
+
     fi
   done
 
 }
 
-## mail() : parses log and output files to construct email file. Sends email to specified address
+## mail( ) : parses log and output files to construct email file. Sends email to specified address
 send_mail () {
 
   echo "###### Sending Email Update: Transfer ${4} ######"
 
   transfer_stats=$(cat "${1}") # extracts last instance of speed and transfer updates
-  err_messages=$(grep 'NOTICE\|ERROR' $2) # extracts all error and notice messages
-  fail_files=$(awk 'BEGIN { FS = ": " } /ERROR/ {print $2}' ${3}) # extracts file names from error messages # failed transfers
+
+  if test -z $(grep 'NOTICE\|ERROR' $2)
+  then
+
+	err_messages='None'
+
+  else
+
+  	err_messages=$(grep 'NOTICE\|ERROR' $2) # extracts all error and notice messages
+
+  fi
+
+  if test -z $(awk 'BEGIN { FS = ": " } /ERROR/ {print $2}' ${3})
+  then
+
+        fail_files='None'
+
+  else
+
+	fail_files=$(awk 'BEGIN { FS = ": " } /ERROR/ {print $2}' ${3}) # extracts file names from error messages for failed transfers
+
+  fi
+
   transfer_path=$4 # indicates transfer path
   output_name=$5
 
-  if [[ $fail_files  == "" ]]
-  then
-
-          fail_files='None'
-
-  fi
-
-
-  if [[ $err_messages  == "" ]]
-  then
-
-          err_messages='None'
-
-  fi
 
   formatted_message=$(cat << EOF
 RCLONE UPLOAD REPORT
@@ -229,15 +246,15 @@ ERRORS:
 ${err_messages}
 EOF
 )
-  echo -e "${formatted_message}" > ${LOG_DIR}/${output_name} # creates human readable stats file 
+  echo -e "${formatted_message}" > ${LOG_DIR}/${output_name} # creates human readable stats file
 
   key=`cat $KEY`
-  sender=`echo $key | cut -d ':' -f 1`  
+  sender=`echo $key | cut -d ':' -f 1` 
 
   curl --url 'smtp://smtp.gmail.com:587' --ssl-reqd \
   --mail-from $sender --mail-rcpt $EMAIL \
   --upload-file ${LOG_DIR}/${output_name} --user $key
-  
+
 }
 
 ###############################################################
@@ -288,7 +305,7 @@ do
     if [[ "$connection_gate" == *"error listing"* ]] # if listint error, program fails
     then
 
-      echo $connection_gate
+      echo "###### Permission Error Occured. ######"
       echo "###### Ending Transfer. ######"
       exit
 
@@ -318,7 +335,7 @@ for ((i=1; i<${trans_number}; i++))
 do
 
   if [ ${i} == 1 ]
-  then 
+  then
 
     FROM=$SOURCE_DIR
     TO=$DEST_DIR
@@ -337,7 +354,6 @@ do
                   $CHECK \
                   $i
 
-  
   if [ ! -z "$EXTERNAL" ]
   then
 
@@ -353,9 +369,9 @@ do
 
   # checks if destination isn't a remote before attempting to unchunks
   if [[ $TO != *:* ]]
-  then 
+  then
 
-    check_and_unchunk $TO 
+    check_and_unchunk $TO
 
   fi
 
@@ -372,7 +388,7 @@ do
 
 
   echo "###### Transfer_${i} Complete ######"
-
+  
   rm ${LOG_DIR}/temp_${ID}.txt
 
 done
