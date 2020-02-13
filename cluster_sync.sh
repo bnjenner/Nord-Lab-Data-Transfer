@@ -13,7 +13,8 @@ arguments:
     -d drive		location for source
     -e email		email address to send completion or error message
     -k key    key file specifying email and password ("email:password")
-    -l log              directory for log files
+    -l log              directory for log 
+    -i includes             directory for log files
 
 For questions of comments, contact Bradley Jenner at <bnjenner@ucdavis.edu>
 EOF
@@ -29,7 +30,7 @@ trap 'echo "\"${last_command}\" command failed on line ${LINENO}."' ERR
 ###############################################################
 #### Argument Parser
 
-while getopts ':hs:d:e:k:l:' option; do
+while getopts ':hs:d:e:k:l:i:' option; do
   case $option in
     h) echo "$usage"
        exit
@@ -43,6 +44,8 @@ while getopts ':hs:d:e:k:l:' option; do
     k) KEY=${OPTARG}
        ;;
     l) LOG_DIR=${OPTARG%/}
+       ;;
+    i) INCLUDES=${OPTARG%/}
        ;;
   esac
 done
@@ -58,7 +61,7 @@ echo "##### Transfer ID: ${ID} #####"
 
 mkdir ${LOG_DIR}/phase_2_${ID}
 
-rclone lsd --include-from=server_directories.txt $SOURCE_DIR | \
+rclone lsd --include-from=$INCLUDES $SOURCE_DIR | \
   awk '{print $5}' > ${LOG_DIR}/phase_2_${ID}/phase_2_source_dirs_${ID}.txt
 
 rclone lsd -L --exclude=logfolder/ --exclude=box.com/ $DEST_DIR | \
