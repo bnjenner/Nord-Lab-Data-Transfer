@@ -73,7 +73,7 @@ do
 		do
 			if [[ $dest_subdir == $source_dir ]]
 			then
-				./clone.sh -s ${SOURCE_DIR}/${source_dir} \
+				clone.sh -s ${SOURCE_DIR}/${source_dir} \
 					         -d ${DEST_DIR}/${dest_dir}/${dest_subdir} \
 				 	         -l $LOG_DIR \
 			     	       -e $EMAIL -k $KEY \

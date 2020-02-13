@@ -184,7 +184,7 @@ chunk_and_clone () {
     then
 
       echo "###### Split File ( ${dest_var%/}/${dir} ) Identified. Merging now. ######"
-      ./unchunk.sh -d ${dest_var%/}/${dir}
+      unchunk.sh -d ${dest_var%/}/${dir}
 
       echo "###### Merge Complete. ######"
 
