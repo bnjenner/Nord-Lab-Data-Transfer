@@ -70,14 +70,14 @@ shift $((OPTIND - 1))
 ## clone_and_check() : main transfer and check protocol.
 clone_and_check() {
 
-  echo "###### Iniating Transfer: ${4} ######"
+  echo "###### Iniating Transfer: ${5} ######"
   rclone copy $1 $2 --verbose --include-from=$3 \
     --tpslimit=3 --transfers=3 --checkers=3 --buffer-size=48M \
     --retries-sleep=10s --retries=5 --ignore-size \
     --log-file=${LOG_DIR}/log_${ID}_${4}_transfer.out.txt
 
 
-  echo "###### Checking Transfer: ${4} ######"
+  echo "###### Checking Transfer: ${5} ######"
   rclone check $1 $2 --verbose --files-from=$3 --one-way \
     --tpslimit=3 --transfers=3 --checkers=3 --buffer-size=48M \
     --retries-sleep=10s --retries=5 --ignore-size \
@@ -352,7 +352,9 @@ do
   clone_and_check $FROM \
                   $TO \
                   $CHECK \
-                  $i
+                  $i \
+                  "${FROM}  ->  ${TO}" 
+
 
   if [ ! -z "$EXTERNAL" ]
   then
@@ -360,7 +362,7 @@ do
     chunk_and_clone ${LOG_DIR}/log_${ID}_${i}_transfer.out.txt \
                     $FROM \
                     $TO \
-                    $i
+                    $i 
 
   fi
 
