@@ -8,13 +8,13 @@ description:
     Implementation of clone.sh that copies contents of subdirectories into corresponding, pre-existing directories.  
 
 arguments:
-    -h help		prints help documentation
-    -s source		source location for files to copy
-    -d drive		location for source
-    -e email		email address to send completion or error message
+    -h help   prints help documentation
+    -s source   source location for files to copy
+    -d drive    location for source
+    -e email    email address to send completion or error message
     -k key    key file specifying email and password ("email:password")
-    -l log              directory for log 
-    -i includes             directory for log files
+    -l log              directory for log
+    -i includes             file with directories in following format: directory/
 
 For questions of comments, contact Bradley Jenner at <bnjenner@ucdavis.edu>
 EOF
@@ -45,7 +45,7 @@ while getopts ':hs:d:e:k:l:i:' option; do
        ;;
     l) LOG_DIR=${OPTARG%/}
        ;;
-    i) INCLUDES=${OPTARG%/}
+    i) INCLUDES=${OPTARG}
        ;;
   esac
 done
@@ -61,8 +61,9 @@ echo "##### Transfer ID: ${ID} #####"
 
 mkdir ${LOG_DIR}/phase_2_${ID}
 
-rclone lsd --include-from=$INCLUDES $SOURCE_DIR | \
+rclone lsd --include-from=${INCLUDES} $SOURCE_DIR | \
   awk '{print $5}' > ${LOG_DIR}/phase_2_${ID}/phase_2_source_dirs_${ID}.txt
+
 
 rclone lsd -L --exclude=logfolder/ --exclude=box.com/ $DEST_DIR | \
   awk '{print $5}' > ${LOG_DIR}/phase_2_${ID}/phase_2_dest_dirs_${ID}.txt
@@ -70,22 +71,21 @@ rclone lsd -L --exclude=logfolder/ --exclude=box.com/ $DEST_DIR | \
 
 for dest_dir in `cat ${LOG_DIR}/phase_2_${ID}/phase_2_dest_dirs_${ID}.txt`
 do
-	for dest_subdir in `ls ${DEST_DIR}/$dest_dir`
-	do
-		for source_dir in `cat ${LOG_DIR}/phase_2_${ID}/phase_2_source_dirs_${ID}.txt` 
-		do
-			if [[ $dest_subdir == $source_dir ]]
-			then
-				clone.sh -s ${SOURCE_DIR}/${source_dir} \
-					         -d ${DEST_DIR}/${dest_dir}/${dest_subdir} \
-				 	         -l $LOG_DIR \
-			     	       -e $EMAIL -k $KEY \
-			     	 	     -v -i ${ID}_${dest_dir}_$dest_subdir
-			fi
-		done
-	done
+  for dest_subdir in `ls ${DEST_DIR}/$dest_dir`
+  do
+    for source_dir in `cat ${LOG_DIR}/phase_2_${ID}/phase_2_source_dirs_${ID}.txt` 
+    do
+      if [[ $dest_subdir == $source_dir ]]
+      then
+        clone.sh -s ${SOURCE_DIR}/${source_dir} \
+                   -d ${DEST_DIR}/${dest_dir}/${dest_subdir} \
+                   -l $LOG_DIR \
+                   -e $EMAIL -k $KEY \
+                   -v -i ${ID}_${dest_dir}_$dest_subdir
+      fi
+    done
+  done
 done
 
 [[ -d ${LOG_DIR}/log_${ID}_debug ]] || mkdir ${LOG_DIR}/log_dir.${ID}
 mv ${LOG_DIR}/*_${ID}*/ ${LOG_DIR}/log_dir.${ID}/
-
