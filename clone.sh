@@ -11,11 +11,11 @@ description:
     rclone file copy protocol with completion and error update emails.
 
 arguments:
-    -h help		prints help documentation
-    -s source		source location for files to copy
-    -d destination		copy location for source files
-    -f final		copy location from destination. Optional second transfer
-    -e email		email address to send completion email.
+    -h help   prints help documentation
+    -s source   source location for files to copy
+    -d destination    copy location for source files
+    -f final    copy location from destination. Optional second transfer
+    -e email    email address to send completion email.
     -k key    key file specifying email and password ("email:password")
     -x external         external drive for storing and splitting large intermediate files temporarily
     -l log              directory for log files
@@ -159,11 +159,11 @@ chunk_and_clone () {
 
   dest_var=$1
 
-  dest_check=`rclone ls --exclude=logfolder/ --exclude=lost+found/ $dest_var`
-
-  if [ -z $dest_check ]
+  if [ -z `rclone ls --exclude=logfolder/ --exclude=lost+found/ $dest_var | grep split_` ]
   then
-  	return 0
+
+    return 0
+
   fi
 
   dest_list=`rclone ls --exclude=logfolder/ --exclude=lost+found/ $dest_var | \
@@ -173,13 +173,18 @@ chunk_and_clone () {
 
   for file in ${dest_list[@]}
   do
+
     temp_list+=( `echo $file |  rev | cut -d '/' -f 2- | rev` )
+
   done
+
 
   split_dir_list=`echo ${temp_list[@]} | tr " " "\n" | sort -n | uniq | tr "\n" " "`
 
+
   for dir in ${split_dir_list[@]}
   do
+
     if [[ $dir = *_split ]]
     then
 
@@ -203,11 +208,11 @@ send_mail () {
   if test -z $(grep 'NOTICE\|ERROR' $2)
   then
 
-	err_messages='None'
+  err_messages='None'
 
   else
 
-  	err_messages=$(grep 'NOTICE\|ERROR' $2) # extracts all error and notice messages
+    err_messages=$(grep 'NOTICE\|ERROR' $2) # extracts all error and notice messages
 
   fi
 
@@ -218,7 +223,7 @@ send_mail () {
 
   else
 
-	fail_files=$(awk 'BEGIN { FS = ": " } /ERROR/ {print $2}' ${3}) # extracts file names from error messages for failed transfers
+  fail_files=$(awk 'BEGIN { FS = ": " } /ERROR/ {print $2}' ${3}) # extracts file names from error messages for failed transfers
 
   fi
 
@@ -362,7 +367,7 @@ do
     chunk_and_clone ${LOG_DIR}/log_${ID}_${i}_transfer.out.txt \
                     $FROM \
                     $TO \
-                    $i 
+                    $i
 
   fi
 
@@ -384,13 +389,13 @@ do
               ${LOG_DIR}/log_${ID}_${i}_transfer.out.txt \
               ${LOG_DIR}/log_${ID}_${i}_check.out.txt \
               "${FROM}  ->  ${TO}" \
-              log_${ID}_${i}_transfer_final.txt  
+              log_${ID}_${i}_transfer_final.txt
 
   fi
 
 
   echo "###### Transfer_${i} Complete ######"
-  
+
   rm ${LOG_DIR}/temp_${ID}.txt
 
 done
@@ -409,4 +414,3 @@ else
   mv ${LOG_DIR}/*${ID}*.txt ${LOG_DIR}/log_${ID}_debug/
 
 fi
-

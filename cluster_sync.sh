@@ -1,5 +1,8 @@
 #!/bin/bash
 
+###############################################################
+#### Usage Message
+
 usage=$(cat << EOF
 usage:
     $(basename "$0") [-h] [-s source] [-d destination]
@@ -71,17 +74,20 @@ rclone lsd -L --exclude=logfolder/ --exclude=box.com/ $DEST_DIR | \
 
 for dest_dir in `cat ${LOG_DIR}/phase_2_${ID}/phase_2_dest_dirs_${ID}.txt`
 do
-  for dest_subdir in `ls ${DEST_DIR}/$dest_dir`
+  for dest_subdir in `ls ${DEST_DIR}/$dest_dir | sort -u`
   do
-    for source_dir in `cat ${LOG_DIR}/phase_2_${ID}/phase_2_source_dirs_${ID}.txt` 
+
+    for source_dir in `cat ${LOG_DIR}/phase_2_${ID}/phase_2_source_dirs_${ID}.txt | sort -u`
     do
+
       if [[ $dest_subdir == $source_dir ]]
       then
-        clone.sh -s ${SOURCE_DIR}/${source_dir} \
-                   -d ${DEST_DIR}/${dest_dir}/${dest_subdir} \
-                   -l $LOG_DIR \
-                   -e $EMAIL -k $KEY \
-                   -v -i ${ID}_${dest_dir}_$dest_subdir
+
+  clone.sh -s ${SOURCE_DIR}/${source_dir} \
+                 -d ${DEST_DIR}/${dest_dir}/${dest_subdir} \
+                 -l $LOG_DIR \
+                 -e $EMAIL -k $KEY \
+                 -v -i ${ID}_${dest_dir}_$dest_subdir
       fi
     done
   done
