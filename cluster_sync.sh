@@ -62,6 +62,8 @@ ID=`date +%s`
 
 echo "##### Transfer ID: ${ID} #####"
 
+mkdir ${LOG_DIR}/phase_2_${ID}
+
 rclone lsd --include-from=${INCLUDES} $SOURCE_DIR | \
   awk '{print $5}' > ${LOG_DIR}/phase_2_${ID}/phase_2_source_dirs_${ID}.txt
 
@@ -91,4 +93,5 @@ do
   done
 done
 
-echo "##### Cluster Sync Complete #####"
+[[ -d ${LOG_DIR}/log_${ID}_debug ]] || mkdir ${LOG_DIR}/log_dir.${ID}
+mv ${LOG_DIR}/*_${ID}*/ ${LOG_DIR}/log_dir.${ID}/
