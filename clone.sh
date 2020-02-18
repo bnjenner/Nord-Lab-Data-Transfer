@@ -347,8 +347,7 @@ do
       echo "###### Permission Error Occured: ${5} ######"
       echo "###### Ending Transfer. ######"
       echo "Tranfser ${5} experienced errors due to connection and/or permissions restrictions." > ${LOG_DIR}/connection_error_${ID}.txt
-      cleanup "1" 
-      exit
+      cleanup "1"
 
     fi
 
