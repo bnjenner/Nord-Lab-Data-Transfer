@@ -262,6 +262,35 @@ EOF
 
 }
 
+## cleanup( ) : Intermediate File Cleanup
+cleanup () {
+
+  if [ -z "$VERBOSE" ]
+  then
+
+    rm ${LOG_DIR}/*${ID}*_check.out.txt ${LOG_DIR}/source_files_${ID}.txt
+
+  else
+
+    code=$1
+
+    [[ -d ${LOG_DIR}/log_${ID}_debug ]] || mkdir ${LOG_DIR}/log_${ID}_debug
+
+    if [ $code == "0" ]
+    then 
+
+      rm ${LOG_DIR}/source_files_${ID}.txt
+      mv ${LOG_DIR}/*${ID}*.txt ${LOG_DIR}/log_${ID}_debug/
+
+    elif [ $code == "1" ]
+
+      mv ${LOG_DIR}/*${ID}*.txt ${LOG_DIR}/log_${ID}_debug/
+
+    fi
+  fi
+
+  exit
+
 ###############################################################
 #### File Transfer Script
 
@@ -307,11 +336,13 @@ do
 
     fi
 
-    if [[ "$connection_gate" == *"error listing"* ]] # if listint error, program fails
+    if [[ "$connection_gate" == *"error listing"* ]] # if listing error, program fails
     then
 
-      echo "###### Permission Error Occured. ######"
+      echo "###### Permission Error Occured: ${5} ######"
       echo "###### Ending Transfer. ######"
+      echo "Tranfser ${5} experienced errors due to connection and/or permissions restrictions." > ${LOG_DIR}/connection_error_${ID}.txt`
+      cleanup "1" 
       exit
 
     fi
@@ -402,15 +433,5 @@ done
 
 ###############################################################
 #### Intermediate File Cleanup
-if [ -z "$VERBOSE" ]
-then
+cleanup "0"
 
-  rm ${LOG_DIR}/*${ID}*_check.out.txt ${LOG_DIR}/source_files_${ID}.txt
-
-else
-
-  [[ -d ${LOG_DIR}/log_${ID}_debug ]] || mkdir ${LOG_DIR}/log_${ID}_debug
-  rm ${LOG_DIR}/source_files_${ID}.txt
-  mv ${LOG_DIR}/*${ID}*.txt ${LOG_DIR}/log_${ID}_debug/
-
-fi
