@@ -284,7 +284,7 @@ cleanup () {
 
     elif [ $code == "1" ]
     then
-      
+
       mv ${LOG_DIR}/*${ID}*.txt ${LOG_DIR}/log_${ID}_debug/
 
     else
@@ -346,7 +346,7 @@ do
 
       echo "###### Permission Error Occured: ${5} ######"
       echo "###### Ending Transfer. ######"
-      echo "Tranfser ${5} experienced errors due to connection and/or permissions restrictions." > ${LOG_DIR}/connection_error_${ID}.txt`
+      echo "Tranfser ${5} experienced errors due to connection and/or permissions restrictions." > ${LOG_DIR}/connection_error_${ID}.txt
       cleanup "1" 
       exit
 
