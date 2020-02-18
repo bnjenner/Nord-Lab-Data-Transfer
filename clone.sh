@@ -286,6 +286,10 @@ cleanup () {
 
       mv ${LOG_DIR}/*${ID}*.txt ${LOG_DIR}/log_${ID}_debug/
 
+    else
+
+      true
+
     fi
   fi
 
