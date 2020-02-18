@@ -276,21 +276,17 @@ cleanup () {
 
     [[ -d ${LOG_DIR}/log_${ID}_debug ]] || mkdir ${LOG_DIR}/log_${ID}_debug
 
-    if [ $code == "0" ]
+    if [[ $code == "0" ]]
     then 
 
       rm ${LOG_DIR}/source_files_${ID}.txt
       mv ${LOG_DIR}/*${ID}*.txt ${LOG_DIR}/log_${ID}_debug/
 
-    elif [ $code == "1" ]
+    elif [[ $code == "1" ]]
     then
 
       mv ${LOG_DIR}/*${ID}*.txt ${LOG_DIR}/log_${ID}_debug/
-
-    else
-
-      true
-
+      
     fi
   fi
 
