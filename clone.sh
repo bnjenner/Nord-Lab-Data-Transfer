@@ -286,12 +286,13 @@ cleanup () {
     then
 
       mv ${LOG_DIR}/*${ID}*.txt ${LOG_DIR}/log_${ID}_debug/
-      
+
     fi
   fi
 
   exit
 
+}
 ###############################################################
 #### File Transfer Script
 
@@ -434,4 +435,3 @@ done
 ###############################################################
 #### Intermediate File Cleanup
 cleanup "0"
-
