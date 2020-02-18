@@ -159,7 +159,7 @@ chunk_and_clone () {
 
   dest_var=$1
 
-  if [ -z `rclone ls --exclude=logfolder/ --exclude=lost+found/ $dest_var | grep split_` ]
+  if [ -z $(rclone ls --exclude=logfolder/ --exclude=lost+found/ $dest_var | grep split_) ]
   then
 
     return 0
