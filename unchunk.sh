@@ -42,18 +42,18 @@ shift $((OPTIND - 1))
 ###############################################################
 #### Unchunk
 
-
+# lists files and their paths in the split directory
 files=( $(ls ${SPLIT_DIR}) )
 out_file=${SPLIT_DIR%_split*}
 out_path=`echo ${SPLIT_DIR} | rev | cut -d "/" -f2- | rev` 
 
+# recreates the file and cats its sections into it. 
 touch ${out_file}
-
 for file in ${files[@]}
 do
     cat ${SPLIT_DIR}/${file} >> ${out_file}
 done
 
-
+# removes old split directory
 rm -rf ${SPLIT_DIR}
 

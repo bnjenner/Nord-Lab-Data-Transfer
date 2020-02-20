@@ -28,10 +28,10 @@ EOF
 ###############################################################
 #### Exit and Error and Debug Messages
 
+# traps error messages, last executed commands, and the line of the error
 set -e
 trap 'last_command=$current_command; current_command=$BASH_COMMAND' DEBUG
 trap 'echo "\"${last_command}\" command failed on line ${LINENO}."' ERR
-
 
 
 ###############################################################
@@ -70,6 +70,8 @@ shift $((OPTIND - 1))
 ## clone_and_check() : main transfer and check protocol.
 clone_and_check() {
 
+  # clone_and_check() operates in two parts-- cloning and checking. It's not brain surgery.
+
   echo "###### Iniating Transfer: ${5} ######"
   rclone copy $1 $2 --verbose --include-from=$3 \
     --tpslimit=3 --transfers=3 --checkers=3 --buffer-size=48M \
@@ -88,8 +90,14 @@ clone_and_check() {
 ## chunk_and_clone() : checks error messages for files that failed due to size. Splits these files into chunks for separate uploads
 chunk_and_clone () {
 
+  # chunk_and_clone() operates by parsing the log files output by clone and check. It then looks to see if any of the files
+  # are over an internally specified file size limit (this limit is determined by the server or storage device), and then breaks
+  # that file into separate chunks into a specified split directory and transfered then.
+
   transfer_errors=`awk 'BEGIN { FS = ": " } /ERROR/ {print $2}' ${1} | grep -v "Attempt .* failed with .* errors and" | sort -u` # extracts transfer errors 
 
+
+  # exits if no errors, no need to waste time 
   if [ -z $transfer_errors ]
   then
     return 0
@@ -105,12 +113,14 @@ chunk_and_clone () {
   index="${4}_chunk" # index prefix
 
 
+  # makes external split drive if necessary
   [[ -d ${external_split_dir} ]] || mkdir ${external_split_dir}
 
 
   for file in ${transfer_errors[@]}
   do
 
+    # checks file sizes of each file in error messages
     chunky_file_size=`rclone size ${location_dir}/${file} | cut -d " " -f5 | cut -d "(" -f2`
 
     if (( ${chunky_file_size} > ${size_limit} )) # this uses bytes for comparison
@@ -127,13 +137,18 @@ chunk_and_clone () {
       # split file into chunks of specified sizes.
       split -a 1 -b ${size_chunks}  ${location_dir}/${file}  ${external_split_dir}/${chunky_file}_split/${file}_split_
 
+      # lists all files in split dir for transfer
       ls ${external_split_dir}/${chunky_file}_split/ > ${LOG_DIR}/temp_chunky_files_${ID}.txt
 
+      # calls clone and check for transfer
       clone_and_check ${external_split_dir}/${chunky_file}_split/ \
                       ${destination_dir%/}/${chunky_file}_split/ \
                       ${LOG_DIR}/temp_chunky_files_${ID}.txt \
                       ${index}_split
 
+
+      # checks to see if any errors occured in transfer, if not the original logfiles are corrected and the output stats are 
+      # placed into the original logfile. Finally, the temporary split dir is deleted.
       chunk_check=`grep -e '0 differences found' ${LOG_DIR}/log_${ID}_${index}_split_check.out.txt`
 
       if [[ $chunk_check != "" ]]
@@ -159,6 +174,7 @@ chunk_and_clone () {
 
   dest_var=$1
 
+  # checks to see if there are any split files in destination directory, if not, function exits
   if [ -z "$(rclone ls --exclude=logfolder/ --exclude=lost+found/ $dest_var | grep split_)" ]
   then
 
@@ -166,9 +182,13 @@ chunk_and_clone () {
 
   fi
 
+  # extracts split directories from destination.
   dest_list=`rclone ls --exclude=logfolder/ --exclude=lost+found/ $dest_var | \
              awk '{$1=""; print $0}' | grep split_`
 
+
+  # the following code is just a lot of manual parsing so the files can actually be 
+  # read and used by rclone. It's ugly... I know.
   temp_list=()
 
   for file in ${dest_list[@]}
@@ -182,6 +202,7 @@ chunk_and_clone () {
   split_dir_list=`echo ${temp_list[@]} | tr " " "\n" | sort -n | uniq | tr "\n" " "`
 
 
+  # here is where the program actually iterates over the directories and calls the unchunk script.
   for dir in ${split_dir_list[@]}
   do
 
@@ -272,6 +293,8 @@ cleanup () {
 
   else
 
+    # compiles all temp and log files into a directory marked by transfer ID
+
     code=$1
 
     [[ -d ${LOG_DIR}/log_${ID}_debug ]] || mkdir ${LOG_DIR}/log_${ID}_debug
@@ -279,12 +302,14 @@ cleanup () {
     if [[ $code == "0" ]]
     then 
 
+      # normal exit code protocol
       rm ${LOG_DIR}/source_files_${ID}.txt
       mv ${LOG_DIR}/*${ID}*.txt ${LOG_DIR}/log_${ID}_debug/
 
     elif [[ $code == "1" ]]
     then
 
+      # alternative exit code protocol, something like a connection error triggers this
       mv ${LOG_DIR}/*${ID}*.txt ${LOG_DIR}/log_${ID}_debug/
 
     fi
@@ -322,9 +347,14 @@ TRANSFER_GATE="init" # trasnfer gatekeeper variable
 while [ "$TRANSFER_GATE" != "pass" ]
 do
 
+  # this initial rclone ls checks to see if the directory is reachable as well as if there are connection errors with any
+  # server. Additionally, the result of this command is used to generate a list of files for rclone to include in later
+  # transfers.
+
   rclone ls --exclude=logfolder/ --exclude=lost+found/ $SOURCE_DIR --log-file=${LOG_DIR}/connection_log_${ID}.txt | \
     awk '{$1=""; print $0}' > ${LOG_DIR}/source_files_${ID}.txt
 
+  # checks for errors and what not in the connection log file
   connection_gate=`cat ${LOG_DIR}/connection_log_${ID}.txt`
 
   if [[ "$connection_gate" == *"ERROR"* ]] || [[ "$connection_gate" == *"couldn’t connect SSH"* ]]
@@ -356,6 +386,7 @@ do
 
 done
 
+# checks to see how many chained transfers are called, 2 are possible.
 if [ ! -z "$FINAL_DIR" ]
 then
 
@@ -367,7 +398,7 @@ else
 
 fi
 
-
+# loop for multiple transfers
 for ((i=1; i<${trans_number}; i++))
 do
 
@@ -393,6 +424,7 @@ do
                   "${FROM}  ->  ${TO}" 
 
 
+  # will only attempt to chunk if an external drive is supplied
   if [ ! -z "$EXTERNAL" ]
   then
 
@@ -406,6 +438,7 @@ do
   #compile statistics for easy parsing / formatting
   grep -A 4 'ETA' ${LOG_DIR}/*${i}_transfer.out.txt | tail -5 >> ${LOG_DIR}/temp_${ID}.txt
 
+
   # checks if destination isn't a remote before attempting to unchunks
   if [[ $TO != *:* ]]
   then
@@ -414,6 +447,7 @@ do
 
   fi
 
+  # checks to see if a key and email were supplied before sending an email.
   if [ ! -z "$EMAIL" ] && [ ! -z "$KEY" ]
   then
 

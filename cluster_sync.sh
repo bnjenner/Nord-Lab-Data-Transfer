@@ -64,14 +64,17 @@ echo "##### Transfer ID: ${ID} #####"
 
 mkdir ${LOG_DIR}/phase_2_${ID}
 
+# checks for directories on cluster
 rclone lsd --include-from=${INCLUDES} $SOURCE_DIR | \
   awk '{print $5}' > ${LOG_DIR}/phase_2_${ID}/phase_2_source_dirs_${ID}.txt
 
-
+# checks for directories on specified directory containing local hard drives 
 rclone lsd -L --exclude=logfolder/ --exclude=box.com/ $DEST_DIR | \
   awk '{print $5}' > ${LOG_DIR}/phase_2_${ID}/phase_2_dest_dirs_${ID}.txt
 
 
+# iterates over directories to find matching directories and then initiates a transfer between them. 
+# this process does not overwrite, but instead, updates.
 for dest_dir in `cat ${LOG_DIR}/phase_2_${ID}/phase_2_dest_dirs_${ID}.txt`
 do
   for dest_subdir in `ls ${DEST_DIR}/$dest_dir | sort -u`
@@ -93,5 +96,6 @@ do
   done
 done
 
+# moves all temp and log files/directoris to a meta dircetory for cluster sync.
 [[ -d ${LOG_DIR}/log_${ID}_debug ]] || mkdir ${LOG_DIR}/log_dir.${ID}
 mv ${LOG_DIR}/*_${ID}*/ ${LOG_DIR}/log_dir.${ID}/
