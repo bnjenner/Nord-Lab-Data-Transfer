@@ -20,6 +20,15 @@ to your path in .bash_profile
     export PATH=$PATH:path/to/this/repository
 
 
+In order to use the email function in clone.sh
+an encrypted file containing the senders gmail
+username and password must be generated using 
+the included script "crypt.sh". The process is 
+very straight forward and can be accomplished 
+using the following command:
+
+    crypt.sh -e -k name_of_key_file.txt
+
 #################### clone.sh  ####################
 
 USAGE:
@@ -91,5 +100,23 @@ ARGUMENTS:
     
     -l log              directory for log files 
 
+#################### crypt.sh  ####################
+
+USAGE:
+
+    crypt.sh [-h] [-ed] [-k]
+
+DESCRIPTION:
+
+    Simple encryption and decryption script for email function in clone.sh
+
+ARGUMENTS:
+
+    -e encrypt    generate encrypted key
+
+    -d decrypt    decrypt key file
+
+    -k key        if -e, output name for encrpyted key file. If -d, key file to decrypt
 
 
+###################################################

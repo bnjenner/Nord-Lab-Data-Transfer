@@ -64,6 +64,8 @@ while getopts ':hs:d:f:e:k:x:l:vi:' option; do
 done
 shift $((OPTIND - 1))
 
+echo "############ CLONE.SH ############"
+
 ###############################################################
 #### Functions
 
@@ -274,7 +276,7 @@ EOF
 )
   echo -e "${formatted_message}" > ${LOG_DIR}/${output_name} # creates human readable stats file
 
-  key=`cat $KEY`
+  key=`echo $SUPER_SECRET_VAR`
   sender=`echo $key | cut -d ':' -f 1` 
 
   curl --url 'smtp://smtp.gmail.com:587' --ssl-reqd \
@@ -336,6 +338,22 @@ then
   LOG_DIR="clone_log"
 
 fi
+
+if [ ! -z $KEY ] && [ ! -z $EMAIL ]
+then
+        echo "###### Password for Encrypted Key File Required ######"
+        echo -n Enter Password For Key File Decryption:
+        read -s password
+        echo
+        SUPER_SECRET_VAR=`crypt.sh -d -k $KEY -p $password` # ;)
+
+elif [ ! -z $$EMAIL ] && [ -z $KEY ]
+then
+
+        echo "###### Encrypted File With Email Username and Password Required ######"
+
+fi
+
 
 # checks to see if log directory exists, creates it if false.
 [[ -d ${LOG_DIR} ]] || mkdir ${LOG_DIR}
