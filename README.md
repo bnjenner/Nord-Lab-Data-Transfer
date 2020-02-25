@@ -104,11 +104,11 @@ ARGUMENTS:
 
 USAGE:
 
-    crypt.sh [-h] [-ed] [-k]
+   crypt.sh [-h] [-ed] [-k]
 
 DESCRIPTION:
 
-    Simple encryption and decryption script for email function in clone.sh
+   Simple encryption and decryption script for email function in clone.sh
 
 ARGUMENTS:
 
