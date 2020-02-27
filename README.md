@@ -17,7 +17,8 @@ Clone this repository to your computer and add it
 to your path in .bash_profile
 
     git clone https://github.com/bnjenner/Nord_Lab_Data_Transfer.git
-    export PATH=$PATH:path/to/this/repository
+    echo "export PATH=$PATH:path/to/this/repository" >> ~/.bash_profile
+    source ~/.bash_profile
 
 
 In order to use the email function in clone.sh
