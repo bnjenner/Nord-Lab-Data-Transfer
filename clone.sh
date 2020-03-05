@@ -15,9 +15,10 @@ arguments:
     -s source   source location for files to copy
     -d destination    copy location for source files
     -f final    copy location from destination. Optional second transfer
+    -x exclude    subdirectories to exclude (one at a time for now)
     -e email    email address to send completion email.
     -k key    key file specifying email and password ("email:password")
-    -x external         external drive for storing and splitting large intermediate files temporarily
+    -t temp-drive         temporary drive for storing and splitting large intermediate files temporarily
     -l log              directory for log files
     -v verbose          save intermediate log files for debugging
 
@@ -37,7 +38,7 @@ trap 'echo "\"${last_command}\" command failed on line ${LINENO}."' ERR
 ###############################################################
 #### Argument Parser
 
-while getopts ':hs:d:f:e:k:x:l:vi:' option; do
+while getopts ':hs:d:f:x:e:k:t:l:vi:' option; do
   case $option in
     h) echo "$usage"
        exit
@@ -48,11 +49,13 @@ while getopts ':hs:d:f:e:k:x:l:vi:' option; do
        ;;
     f) FINAL_DIR=${OPTARG-NA}
        ;;
+    x) EXCLUDE=${OPTARG%/}
+       ;;
     e) EMAIL=${OPTARG}
        ;;
     k) KEY=${OPTARG}
        ;;
-    x) EXTERNAL=${OPTARG%/}
+    t) TEMPORARY_DIR=${OPTARG%/}
        ;;
     l) LOG_DIR=${OPTARG%/}
        ;;
@@ -65,7 +68,7 @@ done
 shift $((OPTIND - 1))
 
 echo "############ CLONE.SH ############"
-
+echo $EXCLUDE
 ###############################################################
 #### Functions
 
@@ -78,7 +81,21 @@ clone_and_check() {
   rclone copy $1 $2 --verbose --include-from=$3 \
     --tpslimit=3 --transfers=3 --checkers=3 --buffer-size=48M \
     --retries-sleep=10s --retries=5 --ignore-size \
-    --log-file=${LOG_DIR}/log_${ID}_${4}_transfer.out.txt
+    --log-file=${LOG_DIR}/log_${ID}_${4}_transfer.out.txt 
+
+ #  pid=$!
+ #  sleep 4
+
+ #  while kill -0 $pid 2> /dev/null
+ #  do
+
+ #    out=`grep -A 4 "ETA" ${LOG_DIR}/log_${ID}_${4}_transfer.out.txt | tail -n 6`
+ #    printf "\033[2K"
+ #    printf '%s' " \r${out}"
+ #    sleep 1
+ 
+ # done
+ # echo
 
 
   echo "###### Checking Transfer: ${5} ######"
@@ -109,7 +126,7 @@ chunk_and_clone () {
   size_limit=15000000000 # cut off file size (usually remote specific) 15000000000
   size_chunks=$(( ${size_limit} / 2)) # chunk sizes for transfer
 
-  external_split_dir=${EXTERNAL}/clone_split_directory # directory to store chunked files for transfer
+  external_split_dir=${TEMPORARY_DIR}/clone_split_directory # directory to store chunked files for transfer
   location_dir=${2%/} # location of input (source)
   destination_dir=$3 # location for output (destination)
   index="${4}_chunk" # index prefix
@@ -317,6 +334,8 @@ cleanup () {
     fi
   fi
 
+  echo "##################################"
+
   exit
 
 }
@@ -330,6 +349,8 @@ then
   ID=`date +%s`
 
 fi
+
+echo "###### ID: ${ID} ######"
 
 # checks to see if -l was specified
 if [ -z "$LOG_DIR" ]
@@ -350,7 +371,7 @@ then
 elif [ ! -z $$EMAIL ] && [ -z $KEY ]
 then
 
-        echo "###### Encrypted File With Email Username and Password Required ######"
+        echo "###### Encrypted File With Email Username and Password Required for Email Updates ######"
 
 fi
 
@@ -404,6 +425,17 @@ do
 
 done
 
+# removes excludes from transfer file
+if [ ! -z "$EXCLUDE" ]
+then
+
+  sed -i -e "/ ${EXCLUDE}\//d" ${LOG_DIR}/source_files_${ID}.txt
+
+fi
+
+echo "######"
+
+
 # checks to see how many chained transfers are called, 2 are possible.
 if [ ! -z "$FINAL_DIR" ]
 then
@@ -443,7 +475,7 @@ do
 
 
   # will only attempt to chunk if an external drive is supplied
-  if [ ! -z "$EXTERNAL" ]
+  if [ ! -z "$TEMPORARY_DIR" ]
   then
 
     chunk_and_clone ${LOG_DIR}/log_${ID}_${i}_transfer.out.txt \
