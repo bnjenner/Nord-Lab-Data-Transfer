@@ -15,9 +15,9 @@ arguments:
     -s source   source location for files to copy
     -d destination    copy location for source files
     -f final    copy location from destination. Optional second transfer
-    -x exclude    subdirectories to exclude (one at a time for now)
+    -x exclude    subdirectories to exclude (one at a time, for now)
     -e email    email address to send completion email.
-    -k key    key file specifying email and password ("email:password")
+    -k key    encrypted key file specifying email and password 
     -t temp-drive         temporary drive for storing and splitting large intermediate files temporarily
     -l log              directory for log files
     -v verbose          save intermediate log files for debugging
@@ -27,13 +27,27 @@ EOF
 )
 
 ###############################################################
-#### Exit and Error and Debug Messages
+#### Error Parser and Error / Debug Messages
+
+error() {
+
+  if [[ $error_hold == 1 ]]
+  then
+
+    return
+
+  else
+
+    echo "\"${last_command}\" command failed on line ${LINENO}."
+    exit 1
+
+  fi 
+}
+
 
 # traps error messages, last executed commands, and the line of the error
-set -e
-trap 'last_command=$current_command; current_command=$BASH_COMMAND' DEBUG
-trap 'echo "\"${last_command}\" command failed on line ${LINENO}."' ERR
-
+trap 'last_command=$BASH_COMMAND' DEBUG
+trap 'error ${?}' ERR
 
 ###############################################################
 #### Argument Parser
@@ -75,26 +89,11 @@ echo "############ CLONE.SH ############"
 clone_and_check() {
 
   # clone_and_check() operates in two parts-- cloning and checking. It's not brain surgery.
-
   echo "###### Iniating Transfer: ${5} ######"
   rclone copy $1 $2 --verbose --include-from=$3 \
     --tpslimit=3 --transfers=3 --checkers=3 --buffer-size=48M \
     --retries-sleep=10s --retries=5 --ignore-size \
     --log-file=${LOG_DIR}/log_${ID}_${4}_transfer.out.txt 
-
- #  pid=$!
- #  sleep 4
-
- #  while kill -0 $pid 2> /dev/null
- #  do
-
- #    out=`grep -A 4 "ETA" ${LOG_DIR}/log_${ID}_${4}_transfer.out.txt | tail -n 6`
- #    printf "\033[2K"
- #    printf '%s' " \r${out}"
- #    sleep 1
- 
- # done
- # echo
 
 
   echo "###### Checking Transfer: ${5} ######"
@@ -367,6 +366,7 @@ then
         echo
         SUPER_SECRET_VAR=`crypt.sh -d -k $KEY -p $password` # ;)
 
+
 elif [ ! -z $$EMAIL ] && [ -z $KEY ]
 then
 
@@ -434,7 +434,6 @@ fi
 
 echo "######"
 
-
 # checks to see how many chained transfers are called, 2 are possible.
 if [ ! -z "$FINAL_DIR" ]
 then
@@ -466,11 +465,17 @@ do
 
   fi
 
+  # enable hold on error exits
+   error_hold=1
+
   clone_and_check $FROM \
                   $TO \
                   $CHECK \
                   $i \
                   "${FROM}  ->  ${TO}" 
+
+  # remove hold on error exits
+  error_hold=0
 
 
   # will only attempt to chunk if an external drive is supplied
