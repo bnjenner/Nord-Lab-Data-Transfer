@@ -243,10 +243,11 @@ send_mail () {
 
   transfer_stats=$(cat "${1}") # extracts last instance of speed and transfer updates
 
-  if test -z $(grep 'NOTICE\|ERROR' $2)
+
+  if [[ ! $(grep 'NOTICE\|ERROR' $2) ]]
   then
 
-  err_messages='None'
+    err_messages='None'
 
   else
 
@@ -254,10 +255,10 @@ send_mail () {
 
   fi
 
-  if test -z $(awk 'BEGIN { FS = ": " } /ERROR/ {print $2}' ${3})
+  if [[ ! $(awk 'BEGIN { FS = ": " } /ERROR/ {print $2}' ${3}) ]]
   then
 
-        fail_files='None'
+    fail_files='None'
 
   else
 
