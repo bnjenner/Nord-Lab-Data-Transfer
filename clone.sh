@@ -131,7 +131,7 @@ chunk_and_clone () {
 
 
   # makes external split drive if necessary
-  [[ -d ${external_split_dir} ]] || mkdir ${external_split_dir}
+  [[ -d ${external_split_dir} ]] || mkdir -p ${external_split_dir}
 
 
   for file in ${transfer_errors[@]}
@@ -147,7 +147,7 @@ chunk_and_clone () {
       echo "###### Writing chunked file (${file}) to ${external_split_dir}/${chunky_file}_split/. This must be manually deleted. ######"
       chunky_file=${file%.*}
 
-      [[ -d ${external_split_dir}/${chunky_file}_split ]] || mkdir ${external_split_dir}/${chunky_file}_split
+      [[ -d ${external_split_dir}/${chunky_file}_split ]] || mkdir -p ${external_split_dir}/${chunky_file}_split
 
       echo "${location_dir}/${file}" > ${LOG_DIR}/temp_chunky_files_${ID}.txt
 
