@@ -115,7 +115,7 @@ chunk_and_clone () {
 
 
   # exits if no errors, no need to waste time 
-  if [ -z $transfer_errors ]
+  if [ -z "$transfer_errors" ]
   then
     return 0
   fi
@@ -143,16 +143,17 @@ chunk_and_clone () {
     if (( ${chunky_file_size} > ${size_limit} )) # this uses bytes for comparison
     then
 
+      chunky_file=`basename ${file%.*}`
+
       echo "###### ERROR: File (${file}) too large. Splitting now. ######"
-      echo "###### Writing chunked file (${file}) to ${external_split_dir}/${chunky_file}_split/. This must be manually deleted. ######"
-      chunky_file=${file%.*}
+      echo "###### Writing chunked file ${file} to ${external_split_dir}/${chunky_file}_split/. ######"
 
       [[ -d ${external_split_dir}/${chunky_file}_split ]] || mkdir -p ${external_split_dir}/${chunky_file}_split
 
       echo "${location_dir}/${file}" > ${LOG_DIR}/temp_chunky_files_${ID}.txt
 
       # split file into chunks of specified sizes.
-      split -a 1 -b ${size_chunks}  ${location_dir}/${file}  ${external_split_dir}/${chunky_file}_split/${file}_split_
+      split -a 1 -b ${size_chunks} ${location_dir}/${file} ${external_split_dir}/${chunky_file}_split/${file}_split_
 
       # lists all files in split dir for transfer
       ls ${external_split_dir}/${chunky_file}_split/ > ${LOG_DIR}/temp_chunky_files_${ID}.txt
@@ -170,10 +171,11 @@ chunk_and_clone () {
 
       if [[ $chunk_check != "" ]]
       then
+        file_tail=`basename ${file}`
 
-        sed -i '' "/${file}/d" ${LOG_DIR}/log_${ID}_${i}_transfer.out.txt
-        sed -i '' "/${file}/d" ${1}
-        sed -i '' "/${file}/d" $CHECK
+        sed -i '' "/${file_tail}/d" ${LOG_DIR}/log_${ID}_${i}_transfer.out.txt
+        sed -i '' "/${file_tail}/d" ${1}
+        sed -i '' "/${file_tail}/d" $CHECK
         cat ${LOG_DIR}/temp_chunky_files_${ID}.txt >> $CHECK
 
         rm -rf ${external_split_dir}/
@@ -467,7 +469,7 @@ do
   fi
 
   # enable hold on error exits
-   error_hold=1
+  error_hold=1
 
   clone_and_check $FROM \
                   $TO \
