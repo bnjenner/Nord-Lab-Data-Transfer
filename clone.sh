@@ -143,31 +143,40 @@ chunk_and_clone () {
     if (( ${chunky_file_size} > ${size_limit} )) # this uses bytes for comparison
     then
 
-      chunky_file=`basename ${file%.*}`
+      chunky_file=${file}
 
       echo "###### ERROR: File (${file}) too large. Splitting now. ######"
       echo "###### Writing chunked file ${file} to ${external_split_dir}/${chunky_file}_split/. ######"
 
       [[ -d ${external_split_dir}/${chunky_file}_split ]] || mkdir -p ${external_split_dir}/${chunky_file}_split
 
-      echo "${location_dir}/${file}" > ${LOG_DIR}/temp_chunky_files_${ID}.txt
+      echo "${chunky_file}" > ${LOG_DIR}/temp_chunky_files_${ID}.txt
+
+      clone_and_check ${location_dir}/ \
+                      ${external_split_dir}/${chunky_file}_split/ \
+                      ${LOG_DIR}/temp_chunky_files_${ID}.txt \
+                      ${index}
+
+      chunky_base=`basename ${file}` 
 
       # split file into chunks of specified sizes.
-      split -a 1 -b ${size_chunks} ${location_dir}/${file} ${external_split_dir}/${chunky_file}_split/${file}_split_
+      split -a 1 -b ${size_chunks} ${external_split_dir}/${chunky_file}_split/${chunky_file} ${external_split_dir}/${chunky_file}_split/${chunky_base}_split_
 
       # lists all files in split dir for transfer
-      ls ${external_split_dir}/${chunky_file}_split/ > ${LOG_DIR}/temp_chunky_files_${ID}.txt
+      echo "*" > ${LOG_DIR}/temp_chunky_files_${ID}.txt
 
       # calls clone and check for transfer
-      clone_and_check ${external_split_dir}/${chunky_file}_split/ \
-                      ${destination_dir%/}/${chunky_file}_split/ \
+      clone_and_check ${external_split_dir}/ \
+                      ${destination_dir} \
                       ${LOG_DIR}/temp_chunky_files_${ID}.txt \
                       ${index}_split
 
 
       # checks to see if any errors occured in transfer, if not the original logfiles are corrected and the output stats are 
       # placed into the original logfile. Finally, the temporary split dir is deleted.
-      chunk_check=`grep -e '0 differences found' ${LOG_DIR}/log_${ID}_${index}_split_check.out.txt`
+      chunk_check=`grep -e '0 differences found' ${LOG_DIR}/log_${index}_split_check.out.txt`
+
+      [[ $? == 0 ]] || chunk_check="failed!!!"
 
       if [[ $chunk_check != "" ]]
       then
