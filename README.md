@@ -1,7 +1,7 @@
 ############## DATA TRANSFER SCRIPTS ##############
 
-The following scripts are implementations of 
-the Rclone data transfer protocol that accomplish
+The following scripts implement Rclone data 
+transfer protocols in scripts that accomplish
 a specific set of tasks defined by the needs of 
 the Nord Lab at UC Davis and their system 
 infrastructure. Please familarize yourself with the 

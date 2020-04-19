@@ -15,9 +15,10 @@ arguments:
     -s source   source location for files to copy
     -d destination    copy location for source files
     -f final    copy location from destination. Optional second transfer
+    -x exclude    subdirectories to exclude (one at a time, for now)
     -e email    email address to send completion email.
-    -k key    key file specifying email and password ("email:password")
-    -x external         external drive for storing and splitting large intermediate files temporarily
+    -k key    encrypted key file specifying email and password 
+    -t temp-drive         temporary drive for storing and splitting large intermediate files temporarily
     -l log              directory for log files
     -v verbose          save intermediate log files for debugging
 
@@ -26,18 +27,32 @@ EOF
 )
 
 ###############################################################
-#### Exit and Error and Debug Messages
+#### Error Parser and Error / Debug Messages
+
+error() {
+
+  if [[ $error_hold == 1 ]]
+  then
+
+    return
+
+  else
+
+    echo "\"${last_command}\" command failed on line ${LINENO}."
+    exit 1
+
+  fi 
+}
+
 
 # traps error messages, last executed commands, and the line of the error
-set -e
-trap 'last_command=$current_command; current_command=$BASH_COMMAND' DEBUG
-trap 'echo "\"${last_command}\" command failed on line ${LINENO}."' ERR
-
+trap 'last_command=$BASH_COMMAND' DEBUG
+trap 'error ${?}' ERR
 
 ###############################################################
 #### Argument Parser
 
-while getopts ':hs:d:f:e:k:x:l:vi:' option; do
+while getopts ':hs:d:f:x:e:k:t:l:vi:' option; do
   case $option in
     h) echo "$usage"
        exit
@@ -48,11 +63,13 @@ while getopts ':hs:d:f:e:k:x:l:vi:' option; do
        ;;
     f) FINAL_DIR=${OPTARG-NA}
        ;;
+    x) EXCLUDE=${OPTARG%/}
+       ;;
     e) EMAIL=${OPTARG}
        ;;
     k) KEY=${OPTARG}
        ;;
-    x) EXTERNAL=${OPTARG%/}
+    t) TEMPORARY_DIR=${OPTARG%/}
        ;;
     l) LOG_DIR=${OPTARG%/}
        ;;
@@ -65,7 +82,6 @@ done
 shift $((OPTIND - 1))
 
 echo "############ CLONE.SH ############"
-
 ###############################################################
 #### Functions
 
@@ -73,12 +89,11 @@ echo "############ CLONE.SH ############"
 clone_and_check() {
 
   # clone_and_check() operates in two parts-- cloning and checking. It's not brain surgery.
-
   echo "###### Iniating Transfer: ${5} ######"
   rclone copy $1 $2 --verbose --include-from=$3 \
     --tpslimit=3 --transfers=3 --checkers=3 --buffer-size=48M \
     --retries-sleep=10s --retries=5 --ignore-size \
-    --log-file=${LOG_DIR}/log_${ID}_${4}_transfer.out.txt
+    --log-file=${LOG_DIR}/log_${ID}_${4}_transfer.out.txt 
 
 
   echo "###### Checking Transfer: ${5} ######"
@@ -100,7 +115,7 @@ chunk_and_clone () {
 
 
   # exits if no errors, no need to waste time 
-  if [ -z $transfer_errors ]
+  if [ -z "$transfer_errors" ]
   then
     return 0
   fi
@@ -109,14 +124,14 @@ chunk_and_clone () {
   size_limit=15000000000 # cut off file size (usually remote specific) 15000000000
   size_chunks=$(( ${size_limit} / 2)) # chunk sizes for transfer
 
-  external_split_dir=${EXTERNAL}/clone_split_directory # directory to store chunked files for transfer
+  external_split_dir=${TEMPORARY_DIR}/clone_split_directory # directory to store chunked files for transfer
   location_dir=${2%/} # location of input (source)
   destination_dir=$3 # location for output (destination)
   index="${4}_chunk" # index prefix
 
 
   # makes external split drive if necessary
-  [[ -d ${external_split_dir} ]] || mkdir ${external_split_dir}
+  [[ -d ${external_split_dir} ]] || mkdir -p ${external_split_dir}
 
 
   for file in ${transfer_errors[@]}
@@ -128,37 +143,48 @@ chunk_and_clone () {
     if (( ${chunky_file_size} > ${size_limit} )) # this uses bytes for comparison
     then
 
+      chunky_file=${file}
+
       echo "###### ERROR: File (${file}) too large. Splitting now. ######"
-      echo "###### Writing chunked file (${file}) to ${external_split_dir}/${chunky_file}_split/. This must be manually deleted. ######"
-      chunky_file=${file%.*}
+      echo "###### Writing chunked file ${file} to ${external_split_dir}/${chunky_file}_split/. ######"
 
-      [[ -d ${external_split_dir}/${chunky_file}_split ]] || mkdir ${external_split_dir}/${chunky_file}_split
+      [[ -d ${external_split_dir}/${chunky_file}_split ]] || mkdir -p ${external_split_dir}/${chunky_file}_split
 
-      echo "${location_dir}/${file}" > ${LOG_DIR}/temp_chunky_files_${ID}.txt
+      echo "${chunky_file}" > ${LOG_DIR}/temp_chunky_files_${ID}.txt
+
+      clone_and_check ${location_dir}/ \
+                      ${external_split_dir}/${chunky_file}_split/ \
+                      ${LOG_DIR}/temp_chunky_files_${ID}.txt \
+                      ${index}
+
+      chunky_base=`basename ${file}` 
 
       # split file into chunks of specified sizes.
-      split -a 1 -b ${size_chunks}  ${location_dir}/${file}  ${external_split_dir}/${chunky_file}_split/${file}_split_
+      split -a 1 -b ${size_chunks} ${external_split_dir}/${chunky_file}_split/${chunky_file} ${external_split_dir}/${chunky_file}_split/${chunky_base}_split_
 
       # lists all files in split dir for transfer
-      ls ${external_split_dir}/${chunky_file}_split/ > ${LOG_DIR}/temp_chunky_files_${ID}.txt
+      echo "*" > ${LOG_DIR}/temp_chunky_files_${ID}.txt
 
       # calls clone and check for transfer
-      clone_and_check ${external_split_dir}/${chunky_file}_split/ \
-                      ${destination_dir%/}/${chunky_file}_split/ \
+      clone_and_check ${external_split_dir}/ \
+                      ${destination_dir} \
                       ${LOG_DIR}/temp_chunky_files_${ID}.txt \
                       ${index}_split
 
 
       # checks to see if any errors occured in transfer, if not the original logfiles are corrected and the output stats are 
       # placed into the original logfile. Finally, the temporary split dir is deleted.
-      chunk_check=`grep -e '0 differences found' ${LOG_DIR}/log_${ID}_${index}_split_check.out.txt`
+      chunk_check=`grep -e '0 differences found' ${LOG_DIR}/log_${index}_split_check.out.txt`
+
+      [[ $? == 0 ]] || chunk_check="failed!!!"
 
       if [[ $chunk_check != "" ]]
       then
+        file_tail=`basename ${file}`
 
-        sed -i '' "/${file}/d" ${LOG_DIR}/log_${ID}_${i}_transfer.out.txt
-        sed -i '' "/${file}/d" ${1}
-        sed -i '' "/${file}/d" $CHECK
+        sed -i '' "/${file_tail}/d" ${LOG_DIR}/log_${ID}_${i}_transfer.out.txt
+        sed -i '' "/${file_tail}/d" ${1}
+        sed -i '' "/${file_tail}/d" $CHECK
         cat ${LOG_DIR}/temp_chunky_files_${ID}.txt >> $CHECK
 
         rm -rf ${external_split_dir}/
@@ -228,10 +254,11 @@ send_mail () {
 
   transfer_stats=$(cat "${1}") # extracts last instance of speed and transfer updates
 
-  if test -z $(grep 'NOTICE\|ERROR' $2)
+
+  if [[ ! $(grep 'NOTICE\|ERROR' $2) ]]
   then
 
-  err_messages='None'
+    err_messages='None'
 
   else
 
@@ -239,10 +266,10 @@ send_mail () {
 
   fi
 
-  if test -z $(awk 'BEGIN { FS = ": " } /ERROR/ {print $2}' ${3})
+  if [[ ! $(awk 'BEGIN { FS = ": " } /ERROR/ {print $2}' ${3}) ]]
   then
 
-        fail_files='None'
+    fail_files='None'
 
   else
 
@@ -317,6 +344,8 @@ cleanup () {
     fi
   fi
 
+  echo "##################################"
+
   exit
 
 }
@@ -330,6 +359,8 @@ then
   ID=`date +%s`
 
 fi
+
+echo "###### ID: ${ID} ######"
 
 # checks to see if -l was specified
 if [ -z "$LOG_DIR" ]
@@ -347,10 +378,11 @@ then
         echo
         SUPER_SECRET_VAR=`crypt.sh -d -k $KEY -p $password` # ;)
 
+
 elif [ ! -z $$EMAIL ] && [ -z $KEY ]
 then
 
-        echo "###### Encrypted File With Email Username and Password Required ######"
+        echo "###### Encrypted File With Email Username and Password Required for Email Updates ######"
 
 fi
 
@@ -404,6 +436,16 @@ do
 
 done
 
+# removes excludes from transfer file
+if [ ! -z "$EXCLUDE" ]
+then
+
+  sed -i -e "/ ${EXCLUDE}\//d" ${LOG_DIR}/source_files_${ID}.txt
+
+fi
+
+echo "######"
+
 # checks to see how many chained transfers are called, 2 are possible.
 if [ ! -z "$FINAL_DIR" ]
 then
@@ -435,15 +477,21 @@ do
 
   fi
 
+  # enable hold on error exits
+  error_hold=1
+
   clone_and_check $FROM \
                   $TO \
                   $CHECK \
                   $i \
                   "${FROM}  ->  ${TO}" 
 
+  # remove hold on error exits
+  error_hold=0
+
 
   # will only attempt to chunk if an external drive is supplied
-  if [ ! -z "$EXTERNAL" ]
+  if [ ! -z "$TEMPORARY_DIR" ]
   then
 
     chunk_and_clone ${LOG_DIR}/log_${ID}_${i}_transfer.out.txt \
