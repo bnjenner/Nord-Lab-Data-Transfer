@@ -5,7 +5,7 @@ the Rclone data transfer protocol that accomplish
 a specific set of tasks defined by the needs of 
 the Nord Lab at UC Davis and their system 
 infrastructure. Please familarize yourself with the 
-following programs as well as the functionality
+following programs as well as the syntax and usage 
 of Rclone before using these scripts. 
 
 For questions of comments, PLEASE contact
