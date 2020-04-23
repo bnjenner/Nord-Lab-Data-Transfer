@@ -68,7 +68,7 @@ USAGE:
 
 DESCRIPTION:
 
-   concatenate files previously split by clone.sh   
+   concatenate files previously split by clone.sh script   
 
 ARGUMENTS:
 
