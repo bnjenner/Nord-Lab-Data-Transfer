@@ -8,7 +8,7 @@ infrastructure. Please familarize yourself with the
 following programs as well as the syntax and usage 
 of Rclone before using these scripts. 
 
-For questions of comments, PLEASE contact
+For questions or comments, PLEASE contact
 Bradley Jenner at <bnjenner@ucdavis.edu>
 
 ################### General Notice ################
