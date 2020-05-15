@@ -92,7 +92,7 @@ clone_and_check() {
   echo "###### Iniating Transfer: ${5} ######"
   rclone copy $1 $2 --verbose --include-from=$3 \
     --tpslimit=3 --transfers=3 --checkers=3 --buffer-size=48M \
-    --retries-sleep=10s --retries=5 --ignore-size \
+    --retries-sleep=10s --retries=5 --ignore-checksum \
     --log-file=${LOG_DIR}/log_${ID}_${4}_transfer.out.txt 
 
 
@@ -111,8 +111,7 @@ chunk_and_clone () {
   # are over an internally specified file size limit (this limit is determined by the server or storage device), and then breaks
   # that file into separate chunks into a specified split directory and transfered then.
 
-  transfer_errors=`awk 'BEGIN { FS = ": " } /ERROR/ {print $2}' ${1} | grep -v "Attempt .* failed with .* errors and" | sort -u` # extracts transfer errors 
-
+  transfer_errors=`awk 'BEGIN { FS = ": " } /ERROR/ {print $2}' ${1}`
 
   # exits if no errors, no need to waste time 
   if [ -z "$transfer_errors" ]
@@ -120,8 +119,7 @@ chunk_and_clone () {
     return 0
   fi
 
-
-  size_limit=15000000000 # cut off file size (usually remote specific) 15000000000
+  size_limit=15000000000 # cut off file size (usually remote specific) 
   size_chunks=$(( ${size_limit} / 2)) # chunk sizes for transfer
 
   external_split_dir=${TEMPORARY_DIR}/clone_split_directory # directory to store chunked files for transfer
@@ -145,8 +143,8 @@ chunk_and_clone () {
 
       chunky_file=${file}
 
-      echo "###### ERROR: File (${file}) too large. Splitting now. ######"
-      echo "###### Writing chunked file ${file} to ${external_split_dir}/${chunky_file}_split/. ######"
+      echo "###### ERROR: File ${file} too large. Splitting now. ######"
+      echo "###### Writing chunked file ${file} to ${external_split_dir}/${chunky_file}_split/ ######"
 
       [[ -d ${external_split_dir}/${chunky_file}_split ]] || mkdir -p ${external_split_dir}/${chunky_file}_split
 
@@ -155,39 +153,43 @@ chunk_and_clone () {
       clone_and_check ${location_dir}/ \
                       ${external_split_dir}/${chunky_file}_split/ \
                       ${LOG_DIR}/temp_chunky_files_${ID}.txt \
-                      ${index}
+                      ${index} \
+                      "${FROM}  ->  ${external_split_dir}/${chunky_file}_split" 
 
       chunky_base=`basename ${file}` 
 
       # split file into chunks of specified sizes.
       split -a 1 -b ${size_chunks} ${external_split_dir}/${chunky_file}_split/${chunky_file} ${external_split_dir}/${chunky_file}_split/${chunky_base}_split_
-
+                    
       # lists all files in split dir for transfer
       echo "*" > ${LOG_DIR}/temp_chunky_files_${ID}.txt
+
+      # remove chunky file
+      rm ${external_split_dir}/${chunky_file}_split/${chunky_file}
 
       # calls clone and check for transfer
       clone_and_check ${external_split_dir}/ \
                       ${destination_dir} \
                       ${LOG_DIR}/temp_chunky_files_${ID}.txt \
-                      ${index}_split
+                      ${index}_split \
+                      "${external_split_dir}/${chunky_file}_split -> ${TO}" 
 
 
       # checks to see if any errors occured in transfer, if not the original logfiles are corrected and the output stats are 
       # placed into the original logfile. Finally, the temporary split dir is deleted.
-      chunk_check=`grep -e '0 differences found' ${LOG_DIR}/log_${index}_split_check.out.txt`
-
-      [[ $? == 0 ]] || chunk_check="failed!!!"
+      chunk_check=`grep -e '0 differences found' ${LOG_DIR}/log_${ID}_${index}_split_check.out.txt`
 
       if [[ $chunk_check != "" ]]
       then
-        file_tail=`basename ${file}`
 
-        sed -i '' "/${file_tail}/d" ${LOG_DIR}/log_${ID}_${i}_transfer.out.txt
-        sed -i '' "/${file_tail}/d" ${1}
-        sed -i '' "/${file_tail}/d" $CHECK
+        echo "$chunky_file size issue resolved." >> $CHECK
         cat ${LOG_DIR}/temp_chunky_files_${ID}.txt >> $CHECK
 
         rm -rf ${external_split_dir}/
+
+      else
+
+        echo "Transfer of large file ${chunky_file} failed."
 
       fi
 
@@ -377,15 +379,7 @@ then
         read -s password
         echo
         SUPER_SECRET_VAR=`crypt.sh -d -k $KEY -p $password` # ;)
-
-
-elif [ ! -z $$EMAIL ] && [ -z $KEY ]
-then
-
-        echo "###### Encrypted File With Email Username and Password Required for Email Updates ######"
-
 fi
-
 
 # checks to see if log directory exists, creates it if false.
 [[ -d ${LOG_DIR} ]] || mkdir ${LOG_DIR}
@@ -444,7 +438,7 @@ then
 
 fi
 
-echo "######"
+echo "############################"
 
 # checks to see how many chained transfers are called, 2 are possible.
 if [ ! -z "$FINAL_DIR" ]
@@ -494,7 +488,7 @@ do
   if [ ! -z "$TEMPORARY_DIR" ]
   then
 
-    chunk_and_clone ${LOG_DIR}/log_${ID}_${i}_transfer.out.txt \
+    chunk_and_clone ${LOG_DIR}/log_${ID}_${i}_check.out.txt \
                     $FROM \
                     $TO \
                     $i
