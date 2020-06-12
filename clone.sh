@@ -119,7 +119,7 @@ chunk_and_clone () {
     return 0
   fi
 
-  size_limit=15000000000 # cut off file size (usually remote specific) 
+  size_limit=100000000 #15000000000 # cut off file size (usually remote specific) 
   size_chunks=$(( ${size_limit} / 2)) # chunk sizes for transfer
 
   external_split_dir=${TEMPORARY_DIR}/clone_split_directory # directory to store chunked files for transfer
@@ -144,14 +144,14 @@ chunk_and_clone () {
       chunky_file=${file}
 
       echo "###### ERROR: File ${file} too large. Splitting now. ######"
-      echo "###### Writing chunked file ${file} to ${external_split_dir}/${chunky_file}_split/ ######"
+      echo "###### Writing chunked file ${file} to ${external_split_dir}/ ######"
 
-      [[ -d ${external_split_dir}/${chunky_file}_split ]] || mkdir -p ${external_split_dir}/${chunky_file}_split
+      #[[ -d ${external_split_dir}/${chunky_file}_split ]] || mkdir -p ${external_split_dir}/${chunky_file}_split
 
       echo "${chunky_file}" > ${LOG_DIR}/temp_chunky_files_${ID}.txt
 
       clone_and_check ${location_dir}/ \
-                      ${external_split_dir}/${chunky_file}_split/ \
+                      ${external_split_dir} \
                       ${LOG_DIR}/temp_chunky_files_${ID}.txt \
                       ${index} \
                       "${FROM}  ->  ${external_split_dir}/${chunky_file}_split" 
@@ -159,13 +159,13 @@ chunk_and_clone () {
       chunky_base=`basename ${file}` 
 
       # split file into chunks of specified sizes.
-      split -a 1 -b ${size_chunks} ${external_split_dir}/${chunky_file}_split/${chunky_file} ${external_split_dir}/${chunky_file}_split/${chunky_base}_split_
+      split -a 1 -b ${size_chunks} ${external_split_dir}/${chunky_file} ${external_split_dir}/${chunky_file}_split_
                     
       # lists all files in split dir for transfer
       echo "*" > ${LOG_DIR}/temp_chunky_files_${ID}.txt
 
       # remove chunky file
-      rm ${external_split_dir}/${chunky_file}_split/${chunky_file}
+      rm ${external_split_dir}/${chunky_file}
 
       # calls clone and check for transfer
       clone_and_check ${external_split_dir}/ \
@@ -348,8 +348,6 @@ cleanup () {
 
   echo "##################################"
 
-  exit
-
 }
 ###############################################################
 #### File Transfer Script
@@ -368,9 +366,15 @@ echo "###### ID: ${ID} ######"
 if [ -z "$LOG_DIR" ]
 then
 
-  LOG_DIR="clone_log"
+  LOG_DIR="clone_log/${ID}"
+
+else
+
+  temp="${LOG_DIR}/log_${ID}"
+  LOG_DIR=$temp
 
 fi
+
 
 if [ ! -z $KEY ] && [ ! -z $EMAIL ]
 then
@@ -397,6 +401,7 @@ do
 
   rclone ls --exclude=logfolder/ --exclude=lost+found/ $SOURCE_DIR --log-file=${LOG_DIR}/connection_log_${ID}.txt | \
     awk '{$1=""; print $0}' > ${LOG_DIR}/source_files_${ID}.txt
+
 
   # checks for errors and what not in the connection log file
   connection_gate=`cat ${LOG_DIR}/connection_log_${ID}.txt`
@@ -441,7 +446,7 @@ fi
 echo "############################"
 
 # checks to see how many chained transfers are called, 2 are possible.
-if [ ! -z "$FINAL_DIR" ]
+if [ ! -z $FINAL_DIR ]
 then
 
   trans_number=3
@@ -485,13 +490,23 @@ do
 
 
   # will only attempt to chunk if an external drive is supplied
-  if [ ! -z "$TEMPORARY_DIR" ]
+  if [ ! -z $TEMPORARY_DIR ]
   then
 
-    chunk_and_clone ${LOG_DIR}/log_${ID}_${i}_check.out.txt \
-                    $FROM \
-                    $TO \
-                    $i
+    # checks if temp dir exits
+    if [ ! -d "$TEMPORARY_DIR" ]
+    then
+
+      echo "###### ERROR: Temporary Directory does not exist ######"
+      cleanup "0"
+
+    else
+
+      chunk_and_clone ${LOG_DIR}/log_${ID}_${i}_check.out.txt \
+                      $FROM \
+                      $TO \
+                      $i
+    fi
 
   fi
 
