@@ -184,8 +184,10 @@ chunk_and_clone () {
 
         echo "$chunky_file size issue resolved." >> $CHECK
         cat ${LOG_DIR}/temp_chunky_files_${ID}.txt >> $CHECK
-
+        RECOVERED=$(echo -e "${RECOVERED}\n${chunky_base}")
         rm -rf ${external_split_dir}/
+
+
 
       else
 
@@ -281,7 +283,7 @@ send_mail () {
 
   transfer_path=$4 # indicates transfer path
   output_name=$5
-
+  recovered_files=$6
 
   formatted_message=$(cat << EOF
 RCLONE UPLOAD REPORT
@@ -301,8 +303,13 @@ ${fail_files}
 **********
 ERRORS:
 ${err_messages}
+
+**********
+RECOVERED:
+${recovered_files}
 EOF
 )
+
   echo -e "${formatted_message}" > ${LOG_DIR}/${output_name} # creates human readable stats file
 
   key=`echo $SUPER_SECRET_VAR`
@@ -487,6 +494,7 @@ do
 
   # remove hold on error exits
   error_hold=0
+  RECOVERED=""
 
 
   # will only attempt to chunk if an external drive is supplied
@@ -530,7 +538,8 @@ do
               ${LOG_DIR}/log_${ID}_${i}_transfer.out.txt \
               ${LOG_DIR}/log_${ID}_${i}_check.out.txt \
               "${FROM}  ->  ${TO}" \
-              log_${ID}_${i}_transfer_final.txt
+              log_${ID}_${i}_transfer_final.txt \
+              $RECOVERED
 
   fi
 
