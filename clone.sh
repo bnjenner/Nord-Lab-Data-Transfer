@@ -119,7 +119,7 @@ chunk_and_clone () {
     return 0
   fi
 
-  size_limit=100000000 #15000000000 # cut off file size (usually remote specific) 
+  size_limit=15000000000 # cut off file size (usually remote specific) 
   size_chunks=$(( ${size_limit} / 2)) # chunk sizes for transfer
 
   external_split_dir=${TEMPORARY_DIR}/clone_split_directory # directory to store chunked files for transfer
@@ -186,8 +186,6 @@ chunk_and_clone () {
         cat ${LOG_DIR}/temp_chunky_files_${ID}.txt >> $CHECK
         RECOVERED=$(echo -e "${RECOVERED}\n${chunky_base}")
         rm -rf ${external_split_dir}/
-
-
 
       else
 
