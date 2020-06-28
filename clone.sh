@@ -168,7 +168,7 @@ chunk_and_clone () {
       rm ${external_split_dir}/${chunky_file}
 
       # calls clone and check for transfer
-      clone_and_check ${external_split_dir}/ \
+      clone_and_check ${external_split_dir} \
                       ${destination_dir} \
                       ${LOG_DIR}/temp_chunky_files_${ID}.txt \
                       ${index}_split \
