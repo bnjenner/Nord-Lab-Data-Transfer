@@ -150,7 +150,7 @@ chunk_and_clone () {
 
       echo "${chunky_file}" > ${LOG_DIR}/temp_chunky_files_${ID}.txt
 
-      clone_and_check ${location_dir}/ \
+      clone_and_check ${location_dir} \
                       ${external_split_dir} \
                       ${LOG_DIR}/temp_chunky_files_${ID}.txt \
                       ${index} \
@@ -169,7 +169,7 @@ chunk_and_clone () {
 
       # calls clone and check for transfer
       clone_and_check ${external_split_dir} \
-                      ${destination_dir} \
+                      ${destination_dir}/${chunky_file}_split_/ \
                       ${LOG_DIR}/temp_chunky_files_${ID}.txt \
                       ${index}_split \
                       "${external_split_dir}/${chunky_file}_split -> ${TO}" 
@@ -186,6 +186,7 @@ chunk_and_clone () {
         cat ${LOG_DIR}/temp_chunky_files_${ID}.txt >> $CHECK
         RECOVERED=$(echo -e "${RECOVERED}\n${chunky_base}")
         rm -rf ${external_split_dir}/
+        chunk_check="" 
 
       else
 
