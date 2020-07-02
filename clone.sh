@@ -150,16 +150,22 @@ chunk_and_clone () {
 
       echo "${chunky_file}" > ${LOG_DIR}/temp_chunky_files_${ID}.txt
 
+      echo " "
+      echo "${location_dir}"
+      echo "${external_split_dir}"
+      cat ${LOG_DIR}/temp_chunky_files_${ID}.txt
+
       clone_and_check ${location_dir} \
                       ${external_split_dir} \
                       ${LOG_DIR}/temp_chunky_files_${ID}.txt \
                       ${index} \
-                      "${FROM}  ->  ${external_split_dir}/${chunky_file}_split" 
+                      "${FROM}/${chunky_file} ->  ${external_split_dir}/${chunky_file}_split" 
 
       chunky_base=`basename ${file}` 
 
       # split file into chunks of specified sizes.
-      split -a 1 -b ${size_chunks} ${external_split_dir}/${chunky_file} ${external_split_dir}/${chunky_file}_split_
+      mkdir -r ${external_split_dir}/${chunky_file}_split
+      split -a 1 -b ${size_chunks} ${external_split_dir}/${chunky_file} ${external_split_dir}/${chunky_file}_split/${chunky_file}_split_
                     
       # lists all files in split dir for transfer
       echo "*" > ${LOG_DIR}/temp_chunky_files_${ID}.txt
@@ -167,12 +173,18 @@ chunk_and_clone () {
       # remove chunky file
       rm ${external_split_dir}/${chunky_file}
 
+      rclone mkdir ${destination_dir}/${chunky_file}_split/
+
+      echo "${external_split_dir}/${chunky_file}_split/" 
+      echo "${destination_dir}/${chunky_file}_split/"
+      cat ${LOG_DIR}/temp_chunky_files_${ID}.txt
+
       # calls clone and check for transfer
-      clone_and_check ${external_split_dir} \
-                      ${destination_dir}/${chunky_file}_split_/ \
+      clone_and_check ${external_split_dir}/${chunky_file}_split/ \
+                      ${destination_dir}/${chunky_file}_split/ \
                       ${LOG_DIR}/temp_chunky_files_${ID}.txt \
                       ${index}_split \
-                      "${external_split_dir}/${chunky_file}_split -> ${TO}" 
+                      "${external_split_dir}/${chunky_file}_split/ -> ${TO}" 
 
 
       # checks to see if any errors occured in transfer, if not the original logfiles are corrected and the output stats are 
@@ -185,8 +197,7 @@ chunk_and_clone () {
         echo "$chunky_file size issue resolved." >> $CHECK
         cat ${LOG_DIR}/temp_chunky_files_${ID}.txt >> $CHECK
         RECOVERED=$(echo -e "${RECOVERED}\n${chunky_base}")
-        rm -rf ${external_split_dir}/
-        chunk_check="" 
+        rm -rf ${external_split_dir}/ 
 
       else
 
