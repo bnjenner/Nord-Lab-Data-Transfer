@@ -150,11 +150,6 @@ chunk_and_clone () {
 
       echo "${chunky_file}" > ${LOG_DIR}/temp_chunky_files_${ID}.txt
 
-      echo " "
-      echo "${location_dir}"
-      echo "${external_split_dir}"
-      cat ${LOG_DIR}/temp_chunky_files_${ID}.txt
-
       clone_and_check ${location_dir} \
                       ${external_split_dir} \
                       ${LOG_DIR}/temp_chunky_files_${ID}.txt \
@@ -173,15 +168,11 @@ chunk_and_clone () {
       # remove chunky file
       rm ${external_split_dir}/${chunky_file}
 
-      rclone mkdir ${destination_dir}/${chunky_file}_split/
-
-      echo "${external_split_dir}/${chunky_file}_split/" 
-      echo "${destination_dir}/${chunky_file}_split/"
-      cat ${LOG_DIR}/temp_chunky_files_${ID}.txt
+      rclone mkdir ${destination_dir%/}/${chunky_file}_split/
 
       # calls clone and check for transfer
       clone_and_check ${external_split_dir}/${chunky_file}_split/ \
-                      ${destination_dir}/${chunky_file}_split/ \
+                      ${destination_dir%/}/${chunky_file}_split/ \
                       ${LOG_DIR}/temp_chunky_files_${ID}.txt \
                       ${index}_split \
                       "${external_split_dir}/${chunky_file}_split/ -> ${TO}" 
