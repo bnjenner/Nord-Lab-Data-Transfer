@@ -154,12 +154,12 @@ chunk_and_clone () {
                       ${external_split_dir} \
                       ${LOG_DIR}/temp_chunky_files_${ID}.txt \
                       ${index} \
-                      "${FROM}/${chunky_file} ->  ${external_split_dir}/${chunky_file}_split" 
+                      "${FROM%/}/${chunky_file} ->  ${external_split_dir}/${chunky_file}_split" 
 
       chunky_base=`basename ${file}` 
 
       # split file into chunks of specified sizes.
-      mkdir -r ${external_split_dir}/${chunky_file}_split
+      mkdir -p ${external_split_dir}/${chunky_file}_split
       split -a 1 -b ${size_chunks} ${external_split_dir}/${chunky_file} ${external_split_dir}/${chunky_file}_split/${chunky_file}_split_
                     
       # lists all files in split dir for transfer
