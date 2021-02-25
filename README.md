@@ -1,14 +1,15 @@
 ############## DATA TRANSFER SCRIPTS ##############
 
 The following scripts implement Rclone data 
-transfer protocols in scripts that accomplish
-a specific set of tasks defined by the needs of 
-the Nord Lab at UC Davis and their system 
-infrastructure. Please familarize yourself with the 
-following programs as well as the syntax and usage 
-of Rclone before using these scripts. 
+transfer protocols in scripts that serve the 
+needs of the Nord Lab at UC Davis and their 
+information techhnology infrastructure. 
+Please familarize yourself with the 
+following programs, their use cases, 
+and the functionality of Rclone 
+before using these scripts. 
 
-For questions or comments, PLEASE contact
+For questions or comments, please contact
 Bradley Jenner at <bnjenner@ucdavis.edu>
 
 ################### General Notice ################
